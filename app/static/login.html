@@ -1,0 +1,609 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HRMS Login</title>
+  <link rel="stylesheet" href="/static/styles.css?v=login-final-ui" />
+
+  <style>
+    .auth-link-row {
+      margin-top: 14px;
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+    }
+
+    .auth-link-row button {
+      background: transparent;
+      border: 0;
+      color: #9be58f;
+      font-weight: 800;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .auth-panel {
+      margin-top: 18px;
+      padding: 18px;
+      border-radius: 18px;
+      border: 1px solid rgba(255, 255, 255, .14);
+      background: rgba(255, 255, 255, .06);
+    }
+
+    .auth-panel.hidden,
+    .hidden {
+      display: none !important;
+    }
+
+    .auth-panel h2 {
+      margin: 0 0 8px;
+      font-size: 1.1rem;
+    }
+
+    .auth-panel p {
+      margin: 0 0 14px;
+      color: rgba(255, 255, 255, .72);
+      line-height: 1.5;
+    }
+
+    .auth-success {
+      color: #9be58f;
+      font-weight: 800;
+      margin-top: 12px;
+      min-height: 20px;
+      line-height: 1.4;
+    }
+
+    .login-error {
+      line-height: 1.4;
+    }
+
+    .password-wrap {
+      position: relative;
+      width: 100%;
+    }
+
+    .password-wrap input {
+      width: 100%;
+      padding-right: 48px;
+    }
+
+    .password-toggle {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 30px;
+      height: 30px;
+      border: 0;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .08);
+      color: rgba(255, 255, 255, .85);
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      font-size: 15px;
+    }
+
+    .password-toggle:hover {
+      color: #9be58f;
+      background: rgba(155, 229, 143, .12);
+    }
+
+    .otp-grid {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(38px, 1fr));
+      gap: 8px;
+      margin: 10px 0 12px;
+    }
+
+    .otp-box {
+      height: 48px;
+      text-align: center;
+      font-size: 22px;
+      font-weight: 900;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, .18);
+      background: rgba(255, 255, 255, .08);
+      color: #fff;
+      outline: none;
+    }
+
+    .otp-box:focus {
+      border-color: #9be58f;
+      box-shadow: 0 0 0 3px rgba(155, 229, 143, .18);
+    }
+
+    .otp-meta {
+      display: grid;
+      gap: 8px;
+      margin: 8px 0 16px;
+    }
+
+    .timer-pill,
+    .resend-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, .08);
+      color: rgba(255, 255, 255, .78);
+      font-size: 13px;
+    }
+
+    .timer-pill strong {
+      color: #9be58f;
+      font-size: 14px;
+    }
+
+    .resend-row button {
+      background: transparent;
+      border: 0;
+      color: #9be58f;
+      font-weight: 900;
+      cursor: pointer;
+      padding: 0;
+      white-space: nowrap;
+    }
+
+    .resend-row button:disabled {
+      opacity: .45;
+      cursor: not-allowed;
+    }
+
+    .password-hint {
+      font-size: 12px;
+      color: rgba(255, 255, 255, .65);
+      margin-top: -6px;
+      margin-bottom: 10px;
+    }
+
+    .button-loading {
+      opacity: .75;
+      pointer-events: none;
+    }
+
+    @media (max-width: 520px) {
+      .otp-grid {
+        gap: 6px;
+      }
+
+      .otp-box {
+        height: 44px;
+        font-size: 19px;
+        border-radius: 10px;
+      }
+
+      .auth-panel {
+        padding: 14px;
+      }
+    }
+  </style>
+</head>
+
+<body class="login-page">
+  <main class="login-shell">
+    <section class="login-panel">
+      <div class="login-brand">
+        <div class="logo-mark">H</div>
+        <div>
+          <strong>HRMS</strong>
+          <span>Employee Portal</span>
+        </div>
+      </div>
+
+      <div class="login-copy">
+        <p class="eyebrow">Welcome back</p>
+        <h1>Sign in to your workspace</h1>
+        <p>Access attendance, leave, timesheets, and employee updates.</p>
+      </div>
+
+      <form class="login-form" id="loginForm">
+        <label>
+          <span>Email or Employee ID</span>
+          <input id="loginInput" type="text" placeholder="manager@wavelynk.com or 260102" autocomplete="username" required />
+        </label>
+
+        <label>
+          <span>Password</span>
+          <div class="password-wrap">
+            <input id="loginPasswordInput" type="password" placeholder="Enter password" autocomplete="current-password" required />
+            <button class="password-toggle" type="button" data-target="loginPasswordInput" aria-label="Show password">👁</button>
+          </div>
+        </label>
+
+        <button id="loginBtn" type="submit">Login ✦</button>
+      </form>
+
+      <div class="auth-link-row">
+        <button id="showForgotPassword" type="button">Forgot password?</button>
+      </div>
+
+      <div id="forgotPasswordPanel" class="auth-panel hidden">
+        <h2>Reset password</h2>
+        <p id="resetHelpText">Enter your email or employee ID. We will send an OTP to your registered email.</p>
+
+        <form class="login-form" id="forgotPasswordForm">
+          <label>
+            <span>Email or Employee ID</span>
+            <input id="forgotLoginInput" type="text" placeholder="260102 or name@wavelynk.com" autocomplete="username" required />
+          </label>
+
+          <button id="sendOtpBtn" type="submit">Send OTP</button>
+        </form>
+
+        <form class="login-form hidden" id="resetPasswordForm">
+          <label>
+            <span>Enter 6-digit OTP</span>
+            <div class="otp-grid" id="otpGrid">
+              <input class="otp-box" type="text" inputmode="numeric" maxlength="1" autocomplete="one-time-code" />
+              <input class="otp-box" type="text" inputmode="numeric" maxlength="1" />
+              <input class="otp-box" type="text" inputmode="numeric" maxlength="1" />
+              <input class="otp-box" type="text" inputmode="numeric" maxlength="1" />
+              <input class="otp-box" type="text" inputmode="numeric" maxlength="1" />
+              <input class="otp-box" type="text" inputmode="numeric" maxlength="1" />
+            </div>
+          </label>
+
+          <div class="otp-meta">
+            <div class="timer-pill">
+              <span>OTP expiry</span>
+              <strong id="expiryTimer">10:00</strong>
+            </div>
+
+            <div class="resend-row">
+              <span id="resendTimer">Resend OTP in 30s</span>
+              <button id="resendOtpBtn" type="button" disabled>Resend OTP</button>
+            </div>
+          </div>
+
+          <label>
+            <span>New password</span>
+            <div class="password-wrap">
+              <input id="newPasswordInput" type="password" minlength="8" placeholder="New password" autocomplete="new-password" required />
+              <button class="password-toggle" type="button" data-target="newPasswordInput" aria-label="Show password">👁</button>
+            </div>
+          </label>
+
+          <div class="password-hint">Use at least 8 characters.</div>
+
+          <label>
+            <span>Confirm password</span>
+            <div class="password-wrap">
+              <input id="confirmPasswordInput" type="password" minlength="8" placeholder="Confirm password" autocomplete="new-password" required />
+              <button class="password-toggle" type="button" data-target="confirmPasswordInput" aria-label="Show password">👁</button>
+            </div>
+          </label>
+
+          <button id="resetPasswordBtn" type="submit">Reset password</button>
+        </form>
+      </div>
+
+      <div id="loginError" class="login-error"></div>
+      <div id="loginSuccess" class="auth-success"></div>
+    </section>
+  </main>
+
+  <script>
+    const loginForm = document.querySelector("#loginForm");
+    const loginInput = document.querySelector("#loginInput");
+    const passwordInput = document.querySelector("#loginPasswordInput");
+    const loginBtn = document.querySelector("#loginBtn");
+
+    const errorBox = document.querySelector("#loginError");
+    const successBox = document.querySelector("#loginSuccess");
+
+    const showForgotPassword = document.querySelector("#showForgotPassword");
+    const forgotPanel = document.querySelector("#forgotPasswordPanel");
+    const forgotForm = document.querySelector("#forgotPasswordForm");
+    const resetForm = document.querySelector("#resetPasswordForm");
+    const resetHelpText = document.querySelector("#resetHelpText");
+
+    const forgotLoginInput = document.querySelector("#forgotLoginInput");
+    const sendOtpBtn = document.querySelector("#sendOtpBtn");
+    const resetPasswordBtn = document.querySelector("#resetPasswordBtn");
+
+    const newPasswordInput = document.querySelector("#newPasswordInput");
+    const confirmPasswordInput = document.querySelector("#confirmPasswordInput");
+
+    const otpBoxes = Array.from(document.querySelectorAll(".otp-box"));
+    const resendOtpBtn = document.querySelector("#resendOtpBtn");
+    const resendTimer = document.querySelector("#resendTimer");
+    const expiryTimer = document.querySelector("#expiryTimer");
+
+    let resendInterval = null;
+    let expiryInterval = null;
+    let resendSeconds = 30;
+    let expirySeconds = 600;
+
+    function setStatus(message = "", isError = false) {
+      errorBox.textContent = isError ? message : "";
+      successBox.textContent = isError ? "" : message;
+    }
+
+    function setLoading(button, isLoading, loadingText = "Please wait...") {
+      if (!button) return;
+
+      if (isLoading) {
+        button.dataset.originalText = button.textContent;
+        button.textContent = loadingText;
+        button.classList.add("button-loading");
+        button.disabled = true;
+      } else {
+        button.textContent = button.dataset.originalText || button.textContent;
+        button.classList.remove("button-loading");
+        button.disabled = false;
+      }
+    }
+
+    async function postJson(url, payload) {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(payload),
+      });
+
+      const contentType = res.headers.get("content-type") || "";
+      const data = contentType.includes("application/json")
+        ? await res.json()
+        : await res.text();
+
+      if (!res.ok) {
+        throw new Error(data?.detail || data?.message || data || "Request failed");
+      }
+
+      return data;
+    }
+
+    function formatTime(totalSeconds) {
+      const mins = String(Math.floor(totalSeconds / 60)).padStart(2, "0");
+      const secs = String(totalSeconds % 60).padStart(2, "0");
+      return `${mins}:${secs}`;
+    }
+
+    function getOtpValue() {
+      return otpBoxes.map((box) => box.value.trim()).join("");
+    }
+
+    function clearOtp() {
+      otpBoxes.forEach((box) => {
+        box.value = "";
+      });
+    }
+
+    function startOtpTimers() {
+      clearInterval(resendInterval);
+      clearInterval(expiryInterval);
+
+      resendSeconds = 30;
+      expirySeconds = 600;
+
+      resendOtpBtn.disabled = true;
+      resendTimer.textContent = `Resend OTP in ${resendSeconds}s`;
+      expiryTimer.textContent = formatTime(expirySeconds);
+
+      resendInterval = setInterval(() => {
+        resendSeconds -= 1;
+
+        if (resendSeconds <= 0) {
+          clearInterval(resendInterval);
+          resendOtpBtn.disabled = false;
+          resendTimer.textContent = "Didn't receive OTP?";
+          return;
+        }
+
+        resendTimer.textContent = `Resend OTP in ${resendSeconds}s`;
+      }, 1000);
+
+      expiryInterval = setInterval(() => {
+        expirySeconds -= 1;
+        expiryTimer.textContent = formatTime(expirySeconds);
+
+        if (expirySeconds <= 0) {
+          clearInterval(expiryInterval);
+          expiryTimer.textContent = "Expired";
+          resendOtpBtn.disabled = false;
+          resendTimer.textContent = "OTP expired. Resend OTP.";
+        }
+      }, 1000);
+    }
+
+    function showResetForm() {
+      forgotForm.classList.add("hidden");
+      resetForm.classList.remove("hidden");
+      resetHelpText.textContent = "Enter the OTP sent to your registered email and create a new password.";
+      clearOtp();
+
+      requestAnimationFrame(() => {
+        otpBoxes[0]?.focus();
+      });
+    }
+
+    async function sendOtp(isResend = false) {
+      const login = forgotLoginInput.value.trim();
+
+      if (!login) {
+        setStatus("Please enter your email or employee ID", true);
+        forgotLoginInput.focus();
+        return;
+      }
+
+      try {
+        setStatus("");
+        setLoading(sendOtpBtn, true, isResend ? "Resending..." : "Sending...");
+        resendOtpBtn.disabled = true;
+
+        const data = await postJson("/api/v1/auth/forgot-password", { login });
+
+        showResetForm();
+        startOtpTimers();
+
+        setStatus(data.message || (isResend ? "New OTP sent." : "OTP sent. Check your registered email."));
+      } catch (err) {
+        setStatus(err.message || "Could not send OTP", true);
+      } finally {
+        setLoading(sendOtpBtn, false);
+      }
+    }
+
+    document.querySelectorAll(".password-toggle").forEach((button) => {
+      button.addEventListener("click", () => {
+        const input = document.getElementById(button.dataset.target);
+        if (!input) return;
+
+        const isHidden = input.type === "password";
+        input.type = isHidden ? "text" : "password";
+        button.textContent = isHidden ? "🙈" : "👁";
+        button.setAttribute("aria-label", isHidden ? "Hide password" : "Show password");
+      });
+    });
+
+    otpBoxes.forEach((box, index) => {
+      box.addEventListener("input", (event) => {
+        const value = event.target.value.replace(/\D/g, "");
+        event.target.value = value;
+
+        if (value && index < otpBoxes.length - 1) {
+          otpBoxes[index + 1].focus();
+        }
+      });
+
+      box.addEventListener("keydown", (event) => {
+        if (event.key === "Backspace" && !box.value && index > 0) {
+          otpBoxes[index - 1].focus();
+        }
+      });
+
+      box.addEventListener("paste", (event) => {
+        event.preventDefault();
+
+        const pastedOtp = event.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+
+        pastedOtp.split("").forEach((digit, digitIndex) => {
+          if (otpBoxes[digitIndex]) {
+            otpBoxes[digitIndex].value = digit;
+          }
+        });
+
+        const nextIndex = Math.min(pastedOtp.length, otpBoxes.length - 1);
+        otpBoxes[nextIndex]?.focus();
+      });
+    });
+
+    loginForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      setStatus("");
+
+      try {
+        setLoading(loginBtn, true, "Logging in...");
+
+        const tokenPayload = await postJson("/api/v1/auth/login", {
+          login: loginInput.value.trim(),
+          password: passwordInput.value,
+        });
+
+        if (tokenPayload?.access_token) {
+          sessionStorage.setItem("hrms_access_token", tokenPayload.access_token);
+        }
+
+        window.location.href = "/dashboard";
+      } catch (err) {
+        setStatus(err.message || "Invalid login", true);
+      } finally {
+        setLoading(loginBtn, false);
+      }
+    });
+
+    showForgotPassword.addEventListener("click", () => {
+      const isOpening = forgotPanel.classList.contains("hidden");
+
+      forgotPanel.classList.toggle("hidden");
+      setStatus("");
+
+      if (isOpening) {
+        forgotForm.classList.remove("hidden");
+        resetForm.classList.add("hidden");
+        resetHelpText.textContent = "Enter your email or employee ID. We will send an OTP to your registered email.";
+
+        clearInterval(resendInterval);
+        clearInterval(expiryInterval);
+
+        forgotLoginInput.value = loginInput.value.trim();
+        forgotLoginInput.focus();
+      }
+    });
+
+    forgotForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      await sendOtp(false);
+    });
+
+    resendOtpBtn.addEventListener("click", async () => {
+      await sendOtp(true);
+    });
+
+    resetForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      setStatus("");
+
+      const otp = getOtpValue();
+
+      if (otp.length !== 6) {
+        setStatus("Please enter the complete 6-digit OTP", true);
+        otpBoxes[0]?.focus();
+        return;
+      }
+
+      if (expirySeconds <= 0) {
+        setStatus("OTP expired. Please resend OTP.", true);
+        resendOtpBtn.disabled = false;
+        return;
+      }
+
+      if (newPasswordInput.value.length < 8) {
+        setStatus("Password must be at least 8 characters", true);
+        newPasswordInput.focus();
+        return;
+      }
+
+      if (newPasswordInput.value !== confirmPasswordInput.value) {
+        setStatus("New password and confirm password do not match", true);
+        confirmPasswordInput.focus();
+        return;
+      }
+
+      try {
+        setLoading(resetPasswordBtn, true, "Resetting...");
+
+        const data = await postJson("/api/v1/auth/reset-password", {
+          login: forgotLoginInput.value.trim(),
+          otp,
+          new_password: newPasswordInput.value,
+        });
+
+        clearInterval(resendInterval);
+        clearInterval(expiryInterval);
+
+        resetForm.classList.add("hidden");
+        forgotForm.classList.remove("hidden");
+        forgotPanel.classList.add("hidden");
+
+        passwordInput.value = "";
+        passwordInput.focus();
+
+        setStatus(data.message || "Password reset successful. Login with your new password.");
+      } catch (err) {
+        setStatus(err.message || "Could not reset password", true);
+      } finally {
+        setLoading(resetPasswordBtn, false);
+      }
+    });
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,648 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Wavelynk HRMS</title>
+  <link rel="stylesheet" href="/static/workspace-glass.css?v=20260502-boldworkspace" />
+</head>
+
+<body>
+  <svg class="svg-sprite" aria-hidden="true">
+    <symbol id="icon-phone" viewBox="0 0 24 24">
+      <path
+        d="M6.6 10.8c1.5 3 3.8 5.3 6.6 6.6l2.2-2.2c.3-.3.7-.4 1.1-.3 1.2.4 2.4.6 3.7.6.6 0 1 .4 1 1v3.5c0 .6-.4 1-1 1C10.3 21.5 2.5 13.7 2.5 3.8c0-.6.4-1 1-1H7c.6 0 1 .4 1 1 0 1.3.2 2.6.6 3.7.1.4 0 .8-.3 1.1l-1.7 2.2Z" />
+    </symbol>
+    <symbol id="icon-video" viewBox="0 0 24 24">
+      <path
+        d="M4 6.5A2.5 2.5 0 0 1 6.5 4h8A2.5 2.5 0 0 1 17 6.5v2.1l3.4-2.1c.7-.4 1.6.1 1.6.9v9.2c0 .8-.9 1.3-1.6.9L17 15.4v2.1a2.5 2.5 0 0 1-2.5 2.5h-8A2.5 2.5 0 0 1 4 17.5v-11Z" />
+    </symbol>
+    <symbol id="icon-users" viewBox="0 0 24 24">
+      <path
+        d="M8.5 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm7 1a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7ZM2 20.5C2.5 16.7 5 14 8.5 14s6 2.7 6.5 6.5H2Zm11.8 0c.4-2.1 1.5-3.8 3.2-4.9 2.7.4 4.5 2.4 5 4.9h-8.2Z" />
+    </symbol>
+  </svg>
+
+  <div class="ambient-bg" aria-hidden="true"></div>
+  <div class="app-shell" id="appShell">
+    <aside class="sidebar glass-panel">
+      <div class="sidebar-brand">
+        <b>W</b>
+        <span>HRMS Portal</span>
+      </div>
+      <div class="side-showcase">
+        <div class="side-showcase-image" aria-hidden="true"></div>
+        <div>
+          <small>Live workspace</small>
+          <strong>People Command</strong>
+        </div>
+        <span>✨</span>
+      </div>
+      <nav id="sidebarNav" class="sidebar-nav"></nav>
+      <div class="side-status-card">
+        <span>🟢</span>
+        <div>
+          <strong>System healthy</strong>
+          <small>Attendance, leave, chat and timesheets are online.</small>
+        </div>
+      </div>
+      <div class="rail-shortcuts">
+        <button type="button">✨ Assist</button>
+        <button type="button">📚 Guide</button>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="top-header glass-panel">
+        <div class="top-search">
+          <span>Search</span>
+          <input id="globalSearch" type="search" placeholder="Search employee ID, name, email" />
+        </div>
+        <div class="header-actions">
+          <button class="icon-button" id="themeToggle" type="button" aria-label="Toggle theme">T</button>
+          <div class="dropdown-wrap">
+            <button class="icon-button notification-toggle" id="notificationToggle" type="button"
+              aria-label="Notifications">
+              N
+              <span class="notification-badge hidden">0</span>
+            </button>
+
+            <div class="dropdown-menu notification-dropdown" id="notificationDropdown">
+              <div class="notification-menu-head">
+                <strong>Notifications</strong>
+                <button id="markAllNotificationsRead" type="button">Mark all read</button>
+              </div>
+              <div id="notificationMenuList" class="notification-menu-list">
+                <p>No notifications.</p>
+              </div>
+            </div>
+          </div>
+          <div class="dropdown-wrap profile-wrap">
+            <button class="profile-button" id="profileToggle" type="button">
+              <span class="avatar">E</span>
+              <span><strong>Employee</strong><small>Workspace</small></span>
+            </button>
+            <div class="dropdown-menu profile-dropdown" id="profileDropdown">
+              <strong>employee@wavelynk.com</strong>
+              <button type="button" data-profile-action="view-profile">View profile</button>
+              <button type="button" data-profile-action="settings">Settings</button>
+              <button type="button" data-profile-action="logout">Logout</button>
+            </div>
+          </div>
+          <button class="logout-button" type="button">Logout</button>
+        </div>
+      </header>
+
+      <nav id="pulseSuiteNav" class="pulse-suite-nav glass-panel" aria-label="Pulse suite navigation">
+        <div class="pulse-brand"><span>💬</span><strong>Pulse</strong></div>
+        <button class="active" type="button" data-suite-view="chat"><b>✦</b><small>Chat</small><em></em></button>
+        <button type="button" data-suite-view="activity"><b>⚡</b><small>Activity</small></button>
+        <button type="button" data-suite-view="calendar"><b>◷</b><small>Calendar</small></button>
+      </nav>
+
+      <section class="content-grid">
+        <div id="dashboardView" class="workspace-view">
+          <section id="dashboardSection" class="hero-dashboard glass-panel">
+            <div>
+              <p class="eyebrow">✨ Good morning</p>
+              <h1>Employee Workspace</h1>
+              <p class="welcome-note">Keep your day on track with attendance, time, leave, and the items waiting on you.
+              </p>
+
+            </div>
+            <div class="hero-card">
+              <div id="workState" class="work-state"><span></span>Not logged in</div>
+              <strong id="liveClock">Friday 09:00</strong>
+              <small id="attendancePriority">Office geofence pending</small>
+            </div>
+
+          </section>
+
+          <section class="dashboard-mosaic">
+            <article id="workTrackingSection" class="glass-card session-card">
+              <div class="card-head">
+                <h2>Attendance</h2><span>Shift</span>
+              </div>
+              <div id="sessionStrip" class="session-strip"></div>
+              <div id="quickActions" class="quick-actions"></div>
+            </article>
+
+            <article class="glass-card schedule-card">
+              <div class="card-head">
+                <h2>Today</h2><span>Timeline</span>
+              </div>
+              <div id="scheduleTimeline" class="timeline"></div>
+            </article>
+
+            <article id="leaveRequestsSection" class="glass-card leave-card">
+              <div class="card-head">
+                <h2>Leave</h2><span>Balance</span>
+              </div>
+              <div id="leaveLegend" class="leave-legend"></div>
+              <table class="compact-table">
+                <tbody id="leaveTable"></tbody>
+              </table>
+            </article>
+
+            <article id="announcementsSection" class="glass-card announcements-card">
+              <div class="card-head">
+                <h2>Notifications</h2><span>Live</span>
+              </div>
+              <div id="announcements" class="announcements"></div>
+            </article>
+
+            <article id="teamStatusSection" class="glass-card team-card hidden">
+              <div class="card-head">
+                <h2>Team Status</h2><span id="teamStatusScope">My team</span>
+              </div>
+              <input id="teamStatusSearch" type="search" placeholder="Search team" />
+              <div class="table-scroll">
+                <table class="compact-table">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Employee</th>
+                      <th>Session</th>
+                      <th>Mode</th>
+                      <th>Break</th>
+                      <th>Status</th>
+                      <th>Updated</th>
+                    </tr>
+                  </thead>
+                  <tbody id="teamStatusRows"></tbody>
+                </table>
+              </div>
+            </article>
+          </section>
+          <div id="statsGrid" class="stats-grid"></div>
+          <div id="focusSummary"></div>
+        </div>
+
+        <section id="profileView" class="workspace-view profile-view hidden">
+          <div class="glass-panel page-heading">
+            <h2>Profile</h2>
+            <p>Personal details and account security.</p>
+          </div>
+          <div class="profile-grid">
+            <article class="glass-card">
+              <button id="profilePhotoPreview" class="profile-photo" type="button">E</button>
+              <input id="profilePhotoInput" type="file" accept="image/*" hidden />
+              <button id="profilePhotoUpload" class="primary-action" type="button">Upload photo</button>
+            </article>
+            <article class="glass-card form-card">
+              <label>Mobile<input id="profileMobileInput" type="tel" value="+91 90000 10001" /></label>
+              <label>Current password<input id="currentPasswordInput" type="password" /></label>
+              <label>New password<input id="newPasswordInput" type="password" /></label>
+              <label>Confirm password<input id="confirmPasswordInput" type="password" /></label>
+              <button id="saveProfileButton" class="primary-action" type="button">Save profile</button>
+            </article>
+          </div>
+        </section>
+
+        <section id="adminView" class="workspace-view admin-view hidden">
+          <div class="glass-panel page-heading">
+            <p class="eyebrow">👑 Executive workspace</p>
+            <h2>People Command Center</h2>
+            <p>Manage people, access, leave policies, timesheets, and audit controls with a premium operating console.
+            </p>
+            <div class="admin-insights">
+              <article><span>👥</span><strong>128</strong><small>Employees mapped</small></article>
+              <article><span>⚡</span><strong>17</strong><small>Approvals in motion</small></article>
+              <article><span>🛡</span><strong>99.8%</strong><small>Policy coverage</small></article>
+              <article><span>🌍</span><strong>4</strong><small>Active locations</small></article>
+            </div>
+            <div class="admin-actions">
+              <button type="button" data-role-action="open-employees">👥 Employees</button>
+              <button type="button" data-role-action="manage-roles">🔐 Roles & Access</button>
+              <button type="button" data-role-action="leave-policy">🌿 Leave Policies</button>
+              <button type="button" data-role-action="timesheet-freeze">⏱ Timesheet Control</button>
+              <button type="button" data-role-action="audit-logs">📜 Audit Logs</button>
+            </div>
+          </div>
+
+          <section id="employeeAdminPanel" class="glass-card admin-panel hidden">
+            <div class="card-head">
+              <h2>✨ Talent Directory</h2><button id="newEmployeeButton" type="button">+ Add talent</button>
+            </div>
+            <form id="employeeAdminForm" class="admin-form">
+              <input id="employeeRecordId" type="hidden" />
+              <label>Name<input id="employeeNameInput" required /></label>
+              <label>Email<input id="employeeEmailInput" type="email" required /></label>
+              <label>Mobile<input id="employeeMobileInput" /></label>
+              <label>Personal email<input id="employeePersonalEmailInput" type="email" /></label>
+              <label>Job title<input id="employeeJobTitleInput" /></label>
+              <label>Employment type<select id="employeeEmploymentTypeInput">
+                  <option>Full-time</option>
+                  <option>Contract</option>
+                  <option>Intern</option>
+                </select></label>
+              <label>Join date<input id="employeeJoinDateInput" type="date" /></label>
+              <label>Department<select id="employeeDepartmentInput"></select></label>
+              <label>Project<input id="employeeProjectInput" list="projectOptionsList" /><datalist
+                  id="projectOptionsList"></datalist></label>
+              <label>Location<input id="employeeLocationInput" list="locationOptionsList" /><datalist
+                  id="locationOptionsList"></datalist></label>
+              <label>Role<select id="employeeRoleInput">
+                  <option>Employee</option>
+                  <option>Supervisor</option>
+                  <option>Manager</option>
+                  <option>HR</option>
+                  <option>Admin</option>
+                </select></label>
+              <label>Manager<select id="employeeManagerInput"></select></label>
+              <div class="inline-tools"><input id="newDepartmentInput" placeholder="New department" /><button
+                  id="addDepartmentButton" type="button">Add department</button></div>
+              <div class="form-actions"><button class="primary-action" type="submit">Save employee</button><button
+                  id="resetEmployeeFormButton" type="button">Reset form</button></div>
+            </form>
+            <div class="table-scroll">
+              <table class="compact-table">
+                <tbody id="employeeAdminRows"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section id="rolesAccessPanel" class="glass-card admin-panel hidden">
+            <div class="card-head">
+              <h2>Roles & Access</h2><span id="assignmentRuleCount"></span>
+            </div>
+            <form id="accessAdminForm" class="admin-form compact-form">
+              <label>Employee<select id="accessEmployeeInput"></select></label>
+              <label>Role<select id="accessRoleInput">
+                  <option>Employee</option>
+                  <option>Supervisor</option>
+                  <option>Manager</option>
+                  <option>HR</option>
+                  <option>Admin</option>
+                </select></label>
+              <label>Supervisor<select id="accessSupervisorInput"></select></label>
+              <label>Manager<select id="accessManagerInput"></select></label>
+              <button class="primary-action" type="submit">Update access</button>
+            </form>
+            <div id="accessAdminRows" class="policy-list"></div>
+            <form id="assignmentRuleForm" class="admin-form compact-form">
+              <label>Project<input id="ruleProjectInput" list="projectOptionsList" /></label>
+              <label>Location<input id="ruleLocationInput" list="locationOptionsList" /></label>
+              <label>Supervisor<select id="ruleSupervisorInput"></select></label>
+              <label>HR<select id="ruleHrInput"></select></label>
+              <label>Manager<select id="ruleManagerInput"></select></label>
+              <button class="primary-action" type="submit">Save rule</button>
+            </form>
+            <div id="assignmentRuleRows" class="assignment-rule-list"></div>
+          </section>
+
+          <section id="leavePolicyPanel" class="glass-card admin-panel hidden">
+            <div class="card-head">
+              <h2>Leave Policies</h2><span>Rules</span>
+            </div>
+            <form id="leavePolicyForm" class="admin-form compact-form">
+              <label>Annual<input id="annualBalanceInput" type="number" /></label>
+              <label>Casual<input id="casualBalanceInput" type="number" /></label>
+              <label>Sick<input id="sickBalanceInput" type="number" /></label>
+              <label>Approval flow<select id="approvalFlowInput">
+                  <option>Manager only</option>
+                  <option>Supervisor then Manager</option>
+                  <option>Manager then HR</option>
+                  <option>No approval required</option>
+                </select></label>
+              <label>Revoke rule<select id="revokeRuleInput">
+                  <option>Manager approval</option>
+                  <option>Supervisor approval</option>
+                  <option>Auto revoke</option>
+                </select></label>
+              <button class="primary-action" type="submit">Save balances</button>
+            </form>
+            <form id="leaveTypeAdminForm" class="admin-form compact-form">
+              <label>Type<input id="leaveTypeNameInput" /></label>
+              <label>Balance<input id="leaveTypeBalanceInput" type="number" /></label>
+              <label>Flow<select id="leaveTypeApprovalInput">
+                  <option>Manager only</option>
+                  <option>Supervisor then Manager</option>
+                  <option>Manager then HR</option>
+                  <option>No approval required</option>
+                </select></label>
+              <button class="primary-action" type="submit">Add type</button>
+            </form>
+            <div id="leaveTypePolicyList" class="policy-list"></div>
+            <form id="holidayAdminForm" class="admin-form compact-form">
+              <label>Country<select id="holidayCountryInput"></select></label>
+              <label>Location<select id="holidayLocationInput"></select></label>
+              <label>Name<input id="holidayNameInput" /></label>
+              <label>Date<input id="holidayDateInput" type="date" /></label>
+              <label>Type<select id="holidayTypeInput">
+                  <option>public</option>
+                  <option>optional</option>
+                </select></label>
+              <button class="primary-action" type="submit">Add holiday</button>
+            </form>
+            <div id="holidayPolicyList" class="policy-list"></div>
+          </section>
+
+          <section id="timesheetControlPanel" class="glass-card admin-panel hidden">
+            <div class="card-head">
+              <h2>Timesheet Control</h2><span>Freeze rules</span>
+            </div>
+            <form id="timesheetControlForm" class="admin-form compact-form">
+              <label>Freeze hour<input id="freezeHourInput" type="number" min="0" max="23" /></label>
+              <label>Rule<select id="freezeRuleInput">
+                  <option>Daily freeze</option>
+                  <option>Weekly freeze</option>
+                </select></label>
+              <label>Weekend entry<select id="weekendEntryInput">
+                  <option>Blocked</option>
+                  <option>Allowed</option>
+                </select></label>
+              <label>Holiday entry<select id="holidayEntryInput">
+                  <option>Blocked</option>
+                  <option>Allowed</option>
+                </select></label>
+              <label>Manager override<select id="managerOverrideInput">
+                  <option>Enabled</option>
+                  <option>Disabled</option>
+                </select></label>
+              <button class="primary-action" type="submit">Save control</button>
+            </form>
+            <div id="timesheetControlSummary" class="policy-list"></div>
+          </section>
+
+          <section id="auditLogPanel" class="glass-card admin-panel hidden">
+            <div class="card-head">
+              <h2>Audit Logs</h2><select id="auditFilterInput">
+                <option>All</option>
+                <option>Employees</option>
+                <option>Leave</option>
+                <option>Timesheets</option>
+              </select>
+            </div>
+            <div id="auditLogRows" class="policy-list"></div>
+          </section>
+        </section>
+
+        <section id="timesheetView" class="workspace-view timesheet-view hidden">
+          <div class="glass-panel page-heading">
+            <h2>Timesheet</h2><span id="timesheetSummaryChip">0h logged</span>
+          </div>
+          <div class="workspace-two-col">
+            <article class="glass-card">
+              <div id="timesheetWeekGrid" class="timesheet-week"></div>
+              <div class="card-head">
+                <h2 id="timesheetDetailHeading">Today</h2><span id="timesheetDayState">Draft</span>
+              </div>
+              <div id="timesheetDetailCard" class="timesheet-detail"></div>
+              <div class="entry-form">
+                <label>Task<input id="timesheetTask" /></label>
+                <label>Hours<input id="timesheetHours" type="number" min="0" step="0.25" /></label>
+                <label>Notes<textarea id="timesheetNotes"></textarea></label>
+                <div class="form-actions"><button id="saveTimesheetEntry" class="primary-action" type="button">Save
+                    day</button><button id="clearTimesheetEntry" type="button">Clear</button><button
+                    id="submitWeeklyTimesheet" type="button">Submit week</button></div>
+              </div>
+            </article>
+            <article class="glass-card">
+              <div class="calendar-nav"><button id="timesheetMonthPrev" type="button">Prev</button><button
+                  id="timesheetMonthNext" type="button">Next</button></div>
+              <div id="timesheetMiniCalendar" class="mini-calendar"></div>
+              <div id="timesheetSummaryList" class="summary-list"></div>
+            </article>
+          </div>
+        </section>
+
+        <section id="leaveView" class="workspace-view leave-view hidden">
+          <div class="glass-panel page-heading">
+            <h2>Leave</h2><span id="leavePendingChip">0 pending</span>
+          </div>
+          <div class="workspace-two-col">
+            <article class="glass-card form-card">
+              <div id="leaveBalanceGrid" class="leave-balance-grid"></div>
+              <label>Leave type<select id="leaveTypeInput"></select></label>
+              <label>Reason category<select id="leaveReasonCategoryInput">
+                  <option>Family event</option>
+                  <option>Medical</option>
+                  <option>Travel</option>
+                  <option>Personal</option>
+                </select></label>
+              <label>Start<input id="leaveStartInput" type="date" /></label>
+              <label>End<input id="leaveEndInput" type="date" /></label>
+              <label>Reason<textarea id="leaveReasonInput"></textarea></label>
+              <div id="leaveSelectionSummary" class="selection-summary"></div>
+              <div class="form-actions"><button id="submitLeaveRequest" class="primary-action" type="button">Apply
+                  leave</button><button id="resetLeaveForm" type="button">Reset</button></div>
+            </article>
+            <article class="glass-card">
+              <div class="calendar-nav"><button id="leaveMonthPrev" type="button">Prev</button><strong
+                  id="leaveMonthLabel">Month</strong><button id="leaveMonthNext" type="button">Next</button></div>
+              <div id="leaveCalendarGrid" class="mini-calendar leave-calendar"></div>
+              <div id="leaveRequestList" class="request-list"></div>
+            </article>
+          </div>
+        </section>
+
+        <section id="calendarView" class="workspace-view hidden">
+          <div class="calendar-shell">
+
+            <!-- TOP BAR -->
+            <div class="calendar-toolbar glass-panel">
+              <div class="left">
+                <button id="todayBtn">Today</button>
+                <button id="calendarPrev">◀</button>
+                <button id="calendarNext">▶</button>
+                <h2 id="calendarMonthLabel"></h2>
+              </div>
+
+              <div class="center">
+                <button data-view="month" class="view-btn active">Month</button>
+                <button data-view="week" class="view-btn">Week</button>
+                <button data-view="day" class="view-btn">Day</button>
+              </div>
+
+              <div class="right">
+                <input id="calendarSearch" placeholder="Search meetings..." />
+                <button id="addCalendarEvent" class="primary">+ New Meeting</button>
+              </div>
+            </div>
+
+            <!-- MAIN -->
+            <div class="calendar-layout">
+
+              <!-- LEFT -->
+              <div class="calendar-left glass-panel">
+                <h3>Mini Calendar</h3>
+                <div id="miniCalendar"></div>
+
+                <h3>Filters</h3>
+                <label><input type="checkbox" checked /> My Meetings</label>
+                <label><input type="checkbox" checked /> Team</label>
+                <label><input type="checkbox" checked /> Leaves</label>
+              </div>
+
+              <!-- CENTER -->
+              <div class="calendar-main glass-panel">
+                <div id="calendarGrid"></div>
+              </div>
+
+              <!-- RIGHT -->
+              <div class="calendar-right glass-panel">
+                <h3>Agenda</h3>
+                <div id="meetingList"></div>
+              </div>
+
+            </div>
+          </div>
+        </section>
+
+        <section id="activityView" class="workspace-view activity-view hidden">
+          <div class="glass-panel page-heading">
+            <h2>Activity</h2>
+            <div id="activityFilters" class="segmented"><button class="active" type="button"
+                data-activity-filter="All">All</button><button type="button"
+                data-activity-filter="Unread">Unread</button><button type="button"
+                data-activity-filter="Mentions">Mentions</button><button type="button"
+                data-activity-filter="Calendar">Calendar</button></div>
+          </div>
+          <div id="activityList" class="activity-list"></div>
+        </section>
+
+        <section id="chatView" class="workspace-view chat-view hidden">
+          <div class="teams-layout">
+            <aside class="teams-app-rail glass-panel">
+              <div class="pulse-brand"><span>💬</span><strong>Pulse</strong></div>
+              <button class="active" type="button" data-app="Chat"><b>✦</b><small>Chat</small><em></em></button>
+              <button type="button" data-app="Activity"><b>⚡</b><small>Activity</small></button>
+              <button type="button" data-app="Calendar"><b>◷</b><small>Calendar</small></button>
+            </aside>
+            <aside class="teams-chat-rail glass-panel">
+              <div class="chat-rail-heading">
+                <p class="eyebrow">Team Pulse</p>
+                <h2>Conversations</h2>
+              </div>
+              <div class="rail-filter"><button class="active" type="button">All</button><button
+                  type="button">Unread</button><button type="button">Groups</button></div>
+              <div id="chatList" class="chat-list"></div>
+            </aside>
+            <section class="teams-thread glass-panel">
+              <header class="thread-header">
+                <button id="threadAvatar" class="chat-avatar large" type="button">A</button>
+                <div id="profileHoverCard" class="profile-hover-card glass-panel" role="dialog" aria-live="polite">
+                </div>
+                <div>
+                  <h2 id="threadName">Conversation</h2>
+                  <p id="threadRole">Online</p>
+                </div>
+                <div id="callControls" class="call-controls"></div>
+                <button id="addPeople" type="button">Add</button>
+                <div class="call-more-wrap"><button id="moreCall" type="button">More</button>
+                  <div id="callMenu" class="call-menu hidden"><button type="button" data-call-action="audio-all">Audio
+                      all</button><button type="button" data-call-action="video-all">Video all</button></div>
+                </div>
+              </header>
+              <div class="thread-tabs"><button class="active" type="button">Chat</button><button
+                  type="button">Shared</button><button type="button">+</button></div>
+              <div id="chatThread" class="chat-thread"></div>
+              <footer class="chat-input">
+                <div id="mentionPicker" class="mention-picker hidden"></div>
+                <div id="formatPicker" class="format-picker hidden"><button type="button"
+                    data-format-action="bold">Bold</button><button type="button"
+                    data-format-action="italic">Italic</button><button type="button"
+                    data-format-action="code">Code</button></div>
+                <div id="emojiPicker" class="emoji-picker hidden"></div>
+                <div id="attachmentTray" class="attachment-tray"></div>
+                <textarea id="chatMessage" placeholder="Type a message"></textarea>
+                <div class="composer-tools">
+                  <button id="formatToggle" type="button">𝐁</button>
+                  <button id="emojiToggle" type="button">😊</button>
+                  <button id="mediaToggle" type="button">🖼</button>
+                  <button id="fileToggle" type="button">📎</button>
+                  <button id="sendChat" class="primary-action" type="button">Send ✦</button>
+                </div>
+                <input id="imageUpload" type="file" accept="image/*" hidden />
+                <input id="fileUpload" type="file" hidden />
+              </footer>
+            </section>
+            <aside class="chat-detail glass-panel hidden" aria-hidden="true">
+              <button id="detailAvatar" class="profile-photo small" type="button">A</button>
+              <h3 id="detailName">Name</h3>
+              <p id="detailRole">Role</p>
+              <div id="detailPresence" class="presence"><span></span>Available</div>
+              <div id="detailList" class="detail-list"></div>
+            </aside>
+          </div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <div id="peopleModal" class="modal hidden">
+    <div class="modal-card glass-panel">
+      <div class="card-head">
+        <h2>Add people</h2><button id="closePeopleModal" type="button">Close</button>
+      </div>
+      <input id="peopleSearch" type="search" placeholder="Search people" />
+      <div id="peopleResults" class="people-results"></div>
+      <div id="selectedPeople" class="selected-people"></div>
+      <div class="form-actions"><button id="confirmPeople" class="primary-action" type="button">Add
+          selected</button><button id="cancelPeople" type="button">Cancel</button></div>
+    </div>
+  </div>
+
+  <div id="imagePreviewModal" class="modal hidden">
+    <div class="modal-card glass-panel image-modal">
+      <div class="card-head">
+        <h2 id="imagePreviewTitle">Image preview</h2><button id="closeImagePreview" type="button">Close</button>
+      </div>
+      <img id="imagePreviewContent" alt="Image preview" />
+      <a id="imagePreviewDownload" href="#">Open image</a>
+    </div>
+  </div>
+
+  <div id="breakModal" class="modal hidden">
+    <div class="modal-card glass-panel">
+      <div class="card-head">
+        <h2>Start break</h2><button id="closeBreakModal" type="button">Close</button>
+      </div>
+      <div id="breakTypeGrid" class="break-grid"></div>
+      <button id="cancelBreakModal" type="button">Cancel</button>
+    </div>
+  </div>
+
+  <div id="wfhModal" class="modal hidden">
+    <div class="modal-card glass-panel">
+      <div class="card-head">
+        <h2>Raise WFH</h2><button id="closeWfhModal" type="button">Close</button>
+      </div>
+      <textarea id="wfhReason" placeholder="Reason"></textarea>
+      <div class="form-actions"><button id="submitWfhRequest" class="primary-action"
+          type="button">Submit</button><button id="cancelWfhModal" type="button">Cancel</button></div>
+    </div>
+  </div>
+
+  <div id="calendarModal" class="modal hidden">
+    <div class="modal-card glass-panel">
+      <div class="card-head">
+        <h2>Calendar event</h2><button id="closeCalendarModal" type="button">Close</button>
+      </div>
+      <label>Title<input id="calendarTitle" /></label>
+      <label>Type<select id="calendarType">
+          <option value="meeting">Meeting</option>
+          <option value="leave">Leave</option>
+          <option value="reminder">Reminder</option>
+        </select></label>
+      <label>Location<input id="calendarLocation" /></label>
+      <label>Visibility<select id="calendarVisibility">
+          <option value="personal">Personal</option>
+          <option value="team">Team</option>
+          <option value="company">Company</option>
+        </select></label>
+      <label>Start<input id="calendarStart" type="datetime-local" /></label>
+      <label>End<input id="calendarEnd" type="datetime-local" /></label>
+      <label>Description<textarea id="calendarDescription"></textarea></label>
+      <div class="form-actions"><button id="saveCalendarEvent" class="primary-action" type="button">Save
+          event</button><button id="cancelCalendarModal" type="button">Cancel</button></div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+  <script src="/static/app.js?v=20260502-realbackend-fix1"></script>
+</body>
+
+</html>
