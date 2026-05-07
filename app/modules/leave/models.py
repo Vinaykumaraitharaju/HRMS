@@ -1,5 +1,6 @@
 import enum
 from datetime import date, datetime
+from typing import Optional
 
 from sqlalchemy import (
     JSON,
@@ -38,9 +39,9 @@ class LeaveRequest(Base):
     status: Mapped[LeaveStatus] = mapped_column(
         Enum(LeaveStatus), default=LeaveStatus.pending_supervisor
     )
-    supervisor_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
-    manager_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
-    decision_note: Mapped[str | None] = mapped_column(String(500))
+    supervisor_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"))
+    manager_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"))
+    decision_note: Mapped[Optional[str]] = mapped_column(String(500))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

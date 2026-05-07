@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import enum
 from datetime import datetime
+from typing import Optional
 
 from sqlalchemy import (
     Boolean,
@@ -53,7 +54,7 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column(String(255))
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
-    employee_id: Mapped[int | None] = mapped_column(
+    employee_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("employees.id", ondelete="SET NULL"),
         nullable=True
     )
@@ -67,7 +68,7 @@ class User(Base):
         lazy="selectin"
     )
 
-    employee: Mapped[Employee | None] = relationship(
+    employee: Mapped[Optional[Employee]] = relationship(
         back_populates="user",
         lazy="selectin"
     )
@@ -90,7 +91,7 @@ class PasswordResetOTP(Base):
         index=True
     )
 
-    used_at: Mapped[datetime | None] = mapped_column(
+    used_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True),
         nullable=True
     )
