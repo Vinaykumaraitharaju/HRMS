@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Optional
 
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Table, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -36,12 +35,12 @@ class ChatMessage(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     sender_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
-    recipient_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"), index=True)
-    group_id: Mapped[Optional[int]] = mapped_column(ForeignKey("chat_groups.id"), index=True)
+    recipient_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    group_id: Mapped[int] = mapped_column(ForeignKey("chat_groups.id"), index=True)
     body: Mapped[str] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    group: Mapped[Optional[ChatGroup]] = relationship(lazy="selectin")
+    group: Mapped[ChatGroup] = relationship(lazy="selectin")
     read_receipts: Mapped[list["ChatMessageReadReceipt"]] = relationship(
         back_populates="message",
         cascade="all, delete-orphan",
@@ -57,3 +56,4 @@ class ChatMessageReadReceipt(Base):
     read_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     message: Mapped[ChatMessage] = relationship(back_populates="read_receipts", lazy="selectin")
+

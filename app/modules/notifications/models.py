@@ -1,6 +1,5 @@
 import enum
 from datetime import datetime
-from typing import Optional
 
 from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
@@ -57,12 +56,12 @@ class Notification(Base):
 
     body: Mapped[str] = mapped_column(Text, nullable=False)
 
-    action_url: Mapped[Optional[str]] = mapped_column(
+    action_url: Mapped[str] = mapped_column(
         String(255),
         nullable=True,
     )
 
-    read_at: Mapped[Optional[datetime]] = mapped_column(
+    read_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
     )
@@ -72,3 +71,4 @@ class Notification(Base):
         server_default=func.now(),
         nullable=False,
     )
+

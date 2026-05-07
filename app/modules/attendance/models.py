@@ -1,6 +1,5 @@
 import enum
 from datetime import datetime
-from typing import Optional
 
 from sqlalchemy import DateTime, Enum, Float, ForeignKey, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column
@@ -30,8 +29,9 @@ class AttendanceLog(Base):
     longitude: Mapped[float] = mapped_column(Float)
     distance_meters: Mapped[float] = mapped_column(Float)
     work_mode: Mapped[str] = mapped_column(String(20), default="office")
-    break_type: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
-    note: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    break_type: Mapped[str] = mapped_column(String(50), nullable=True)
+    note: Mapped[str] = mapped_column(String(500), nullable=True)
     captured_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
+
