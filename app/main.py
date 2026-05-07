@@ -7,10 +7,13 @@ from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 from sqlalchemy import text
+from sqlalchemy.exc import OperationalError
 
 from app.core.config import settings
+from app.core.database import Base
 from app.core.database import engine
 from app.core.security import decode_access_token
+from app.db import schema  # noqa: F401  # Ensure model metadata is registered
 
 from app.modules.activity.router import router as activity_router
 from app.modules.attendance.router import router as attendance_router
@@ -43,21 +46,26 @@ def create_app() -> FastAPI:
     @app.on_event("startup")
     async def normalize_role_enum_values() -> None:
         async with engine.begin() as conn:
-            await conn.execute(
-                text("UPDATE roles SET name='admin' WHERE lower(name)='admin'")
-            )
-            await conn.execute(
-                text("UPDATE roles SET name='hr' WHERE lower(name)='hr'")
-            )
-            await conn.execute(
-                text("UPDATE roles SET name='manager' WHERE lower(name)='manager'")
-            )
-            await conn.execute(
-                text("UPDATE roles SET name='supervisor' WHERE lower(name)='supervisor'")
-            )
-            await conn.execute(
-                text("UPDATE roles SET name='employee' WHERE lower(name)='employee'")
-            )
+            await conn.run_sync(Base.metadata.create_all)
+            try:
+                await conn.execute(
+                    text("UPDATE roles SET name='admin' WHERE lower(name)='admin'")
+                )
+                await conn.execute(
+                    text("UPDATE roles SET name='hr' WHERE lower(name)='hr'")
+                )
+                await conn.execute(
+                    text("UPDATE roles SET name='manager' WHERE lower(name)='manager'")
+                )
+                await conn.execute(
+                    text("UPDATE roles SET name='supervisor' WHERE lower(name)='supervisor'")
+                )
+                await conn.execute(
+                    text("UPDATE roles SET name='employee' WHERE lower(name)='employee'")
+                )
+            except OperationalError:
+                # If startup races with initial DB bootstrap, continue without failing boot.
+                pass
 
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
