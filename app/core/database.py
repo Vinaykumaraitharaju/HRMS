@@ -23,8 +23,13 @@ def _resolve_database_url(raw_url: str) -> str:
     data_dir = os.getenv("PERSISTENT_DATA_DIR", "/var/data")
     db_file = raw_url.removeprefix("sqlite+aiosqlite:///./")
     db_path = Path(data_dir) / db_file
-    db_path.parent.mkdir(parents=True, exist_ok=True)
-    return f"sqlite+aiosqlite:///{db_path.as_posix()}"
+    try:
+        db_path.parent.mkdir(parents=True, exist_ok=True)
+        return f"sqlite+aiosqlite:///{db_path.as_posix()}"
+    except PermissionError:
+        # If persistent disk is not mounted/writable yet, keep original URL
+        # so the service can still boot instead of crashing on import.
+        return raw_url
 
 
 engine = create_async_engine(_resolve_database_url(settings.database_url), pool_pre_ping=True)
