@@ -43,12 +43,78 @@ def is_authenticated(request: Request) -> bool:
         return False
 
 
+async def _migrate_sqlite_employees_reports_to_nullable() -> None:
+    async with engine.begin() as conn:
+        if conn.dialect.name != "sqlite":
+            return
+
+        table_check = await conn.execute(
+            text("SELECT name FROM sqlite_master WHERE type='table' AND name='employees'")
+        )
+        if table_check.first() is None:
+            return
+
+        pragma_rows = await conn.execute(text("PRAGMA table_info(employees)"))
+        rows = pragma_rows.fetchall()
+        reports_to_info = next((row for row in rows if row[1] == "reports_to_id"), None)
+        if reports_to_info is None:
+            return
+
+        # PRAGMA table_info columns: cid, name, type, notnull, dflt_value, pk
+        reports_to_not_null = int(reports_to_info[3]) == 1
+        if not reports_to_not_null:
+            return
+
+        await conn.execute(text("PRAGMA foreign_keys=OFF"))
+        await conn.execute(
+            text(
+                """
+                CREATE TABLE employees_new (
+                    id INTEGER NOT NULL PRIMARY KEY,
+                    employee_code VARCHAR(6) NOT NULL,
+                    first_name VARCHAR(120) NOT NULL,
+                    last_name VARCHAR(120) NOT NULL,
+                    job_title VARCHAR(120) NOT NULL,
+                    date_joined DATE NOT NULL,
+                    department_id INTEGER NOT NULL,
+                    reports_to_id INTEGER NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY(department_id) REFERENCES departments (id),
+                    FOREIGN KEY(reports_to_id) REFERENCES employees (id)
+                )
+                """
+            )
+        )
+        await conn.execute(
+            text(
+                """
+                INSERT INTO employees_new (
+                    id, employee_code, first_name, last_name, job_title,
+                    date_joined, department_id, reports_to_id, created_at
+                )
+                SELECT
+                    id, employee_code, first_name, last_name, job_title,
+                    date_joined, department_id, reports_to_id, created_at
+                FROM employees
+                """
+            )
+        )
+        await conn.execute(text("DROP TABLE employees"))
+        await conn.execute(text("ALTER TABLE employees_new RENAME TO employees"))
+        await conn.execute(
+            text("CREATE UNIQUE INDEX IF NOT EXISTS ix_employees_employee_code ON employees (employee_code)")
+        )
+        await conn.execute(text("PRAGMA foreign_keys=ON"))
+
+
 def create_app() -> FastAPI:
     app = FastAPI(title=settings.app_name, version="0.1.0")
     static_dir = Path(__file__).resolve().parent / "static"
 
     @app.on_event("startup")
     async def normalize_role_enum_values() -> None:
+        await _migrate_sqlite_employees_reports_to_nullable()
+
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
             try:
