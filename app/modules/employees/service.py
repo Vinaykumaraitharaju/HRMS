@@ -87,6 +87,14 @@ class EmployeeService:
                 detail="A user with this email already exists",
             )
 
+        if payload_data.get("reports_to_id") is None:
+            # Backward-compatible fallback for legacy SQLite schemas where
+            # reports_to_id is still NOT NULL in production.
+            next_id_result = await self.db.execute(select(func.max(Employee.id)))
+            next_id = (next_id_result.scalar_one_or_none() or 0) + 1
+            payload_data["id"] = next_id
+            payload_data["reports_to_id"] = next_id
+
         employee = Employee(employee_code=employee_code, **payload_data)
         self.db.add(employee)
         await self.db.flush()
