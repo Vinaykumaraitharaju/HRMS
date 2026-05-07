@@ -123,11 +123,18 @@ class AuthService:
     async def _send_otp_email(self, to_email: str, otp: str) -> None:
         smtp_host = os.getenv("SMTP_HOST", "").strip()
         smtp_port = int(os.getenv("SMTP_PORT", "587"))
-        smtp_user = os.getenv("SMTP_USER", "").strip()
+        smtp_user = (
+            os.getenv("SMTP_USERNAME", "").strip()
+            or os.getenv("SMTP_USER", "").strip()
+        )
         smtp_password = (
             os.getenv("SMTP_PASSWORD", "").strip() or os.getenv("SMTP_PASS", "").strip()
         )
-        smtp_from = os.getenv("SMTP_FROM", smtp_user).strip()
+        smtp_from = (
+            os.getenv("FROM_EMAIL", "").strip()
+            or os.getenv("SMTP_FROM", "").strip()
+            or smtp_user
+        ).strip()
 
         subject = "Your Wavelynk HRMS Password Reset OTP"
 
