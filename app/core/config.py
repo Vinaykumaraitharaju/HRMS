@@ -23,6 +23,8 @@ class Settings(BaseSettings):
     smtp_username: str | None = None
     smtp_password: str | None = None
     from_email: str | None = None
+    admin_email: str | None = None
+    admin_password: str | None = None
 
     # ✅ IMPORTANT FIX
     model_config = SettingsConfigDict(

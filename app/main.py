@@ -7,13 +7,17 @@ from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 from sqlalchemy import text
+from sqlalchemy import select
 from sqlalchemy.exc import OperationalError
 
 from app.core.config import settings
 from app.core.database import Base
+from app.core.database import AsyncSessionLocal
 from app.core.database import engine
 from app.core.security import decode_access_token
+from app.core.security import hash_password
 from app.db import schema  # noqa: F401  # Ensure model metadata is registered
+from app.modules.auth.models import Role, RoleModel, User
 
 from app.modules.activity.router import router as activity_router
 from app.modules.attendance.router import router as attendance_router
@@ -66,6 +70,32 @@ def create_app() -> FastAPI:
             except OperationalError:
                 # If startup races with initial DB bootstrap, continue without failing boot.
                 pass
+
+        admin_email = (settings.admin_email or "").strip().lower()
+        admin_password = (settings.admin_password or "").strip()
+        if admin_email and admin_password:
+            async with AsyncSessionLocal() as session:
+                result = await session.execute(select(User).where(User.email == admin_email))
+                existing_user = result.scalar_one_or_none()
+                if not existing_user:
+                    role_result = await session.execute(
+                        select(RoleModel).where(RoleModel.name == Role.admin)
+                    )
+                    admin_role = role_result.scalar_one_or_none()
+                    if not admin_role:
+                        admin_role = RoleModel(name=Role.admin)
+                        session.add(admin_role)
+                        await session.flush()
+
+                    user = User(
+                        email=admin_email,
+                        password_hash=hash_password(admin_password),
+                        employee_id=None,
+                        roles=[admin_role],
+                        is_active=True,
+                    )
+                    session.add(user)
+                    await session.commit()
 
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
