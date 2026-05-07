@@ -7,11 +7,17 @@ from passlib.context import CryptContext
 from app.core.config import settings
 
 
-password_context = CryptContext(schemes=["bcrypt_sha256", "bcrypt"], deprecated="auto")
+password_context = CryptContext(
+    schemes=["bcrypt_sha256", "bcrypt"],
+    deprecated="auto",
+    bcrypt__truncate_error=False,
+)
 
 
 def hash_password(password: str) -> str:
-    return password_context.hash(password)
+    # Guard against bcrypt backend length limits in all code paths.
+    password = str(password or "")
+    return password_context.hash(password[:72])
 
 
 def verify_password(password: str, password_hash: str) -> bool:
