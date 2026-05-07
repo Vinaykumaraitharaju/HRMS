@@ -5,6 +5,7 @@ from datetime import datetime
 
 from sqlalchemy import (
     Boolean,
+    Column,
     DateTime,
     Enum,
     ForeignKey,
@@ -18,7 +19,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.core.database import Base
 
 # ✅ Import Employee properly (adjust path if needed)
-from app.modules.employee.models import Employee
+from app.modules.employees.models import Employee
 
 
 class Role(str, enum.Enum):
@@ -32,8 +33,8 @@ class Role(str, enum.Enum):
 user_roles = Table(
     "user_roles",
     Base.metadata,
-    mapped_column("user_id", ForeignKey("users.id", ondelete="CASCADE"), primary_key=True),
-    mapped_column("role_id", ForeignKey("roles.id", ondelete="CASCADE"), primary_key=True),
+    Column("user_id", ForeignKey("users.id", ondelete="CASCADE"), primary_key=True),
+    Column("role_id", ForeignKey("roles.id", ondelete="CASCADE"), primary_key=True),
 )
 
 
