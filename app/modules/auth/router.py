@@ -3,8 +3,10 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from pydantic import BaseModel
 from sqlalchemy import select
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.database import Base, engine
 from app.core.database import get_db
 from app.core.dependencies import get_current_user, require_roles
 from app.core.security import decode_access_token, hash_password
@@ -222,30 +224,44 @@ async def seed_admin(payload: dict, db: Annotated[AsyncSession, Depends(get_db)]
     if not email or not password:
         raise HTTPException(status_code=400, detail="Email and password required")
 
-    result = await db.execute(select(User).where(User.email == email))
-    if result.scalar_one_or_none():
-        return {"message": "User already exists"}
+    try:
+        # Ensure all tables exist before seeding.
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
 
-    role_result = await db.execute(
-        select(RoleModel).where(RoleModel.name == Role.admin)
-    )
-    admin_role = role_result.scalar_one_or_none()
-    if not admin_role:
-        admin_role = RoleModel(name=Role.admin)
-        db.add(admin_role)
-        await db.flush()
+        role_result = await db.execute(
+            select(RoleModel).where(RoleModel.name == Role.admin)
+        )
+        admin_role = role_result.scalar_one_or_none()
+        if not admin_role:
+            admin_role = RoleModel(name=Role.admin)
+            db.add(admin_role)
+            await db.flush()
 
-    user = User(
-        email=email,
-        password_hash=hash_password(password),
-        employee_id=None,
-        roles=[admin_role],
-        is_active=True,
-    )
+        result = await db.execute(select(User).where(User.email == email))
+        user = result.scalar_one_or_none()
 
-    db.add(user)
-    await db.commit()
-    return {"message": "Admin created", "email": email}
+        if user:
+            user.password_hash = hash_password(password)
+            user.is_active = True
+            user.roles = [admin_role]
+            await db.commit()
+            return {"message": "Admin updated", "email": email}
+
+        user = User(
+            email=email,
+            password_hash=hash_password(password),
+            employee_id=None,
+            roles=[admin_role],
+            is_active=True,
+        )
+
+        db.add(user)
+        await db.commit()
+        return {"message": "Admin created", "email": email}
+    except SQLAlchemyError as exc:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=f"Seed admin failed: {exc}")
 
 
 @router.get("/directory")
