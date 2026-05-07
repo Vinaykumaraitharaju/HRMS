@@ -262,6 +262,9 @@ async def seed_admin(payload: dict, db: Annotated[AsyncSession, Depends(get_db)]
     except SQLAlchemyError as exc:
         await db.rollback()
         raise HTTPException(status_code=500, detail=f"Seed admin failed: {exc}")
+    except Exception as exc:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=f"Seed admin unexpected error: {exc}")
 
 
 @router.get("/directory")
