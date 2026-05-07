@@ -1,4 +1,5 @@
 from datetime import date, datetime
+from typing import Optional
 
 from sqlalchemy import Date, DateTime, ForeignKey, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -27,5 +28,5 @@ class Employee(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     department: Mapped[Department] = relationship(lazy="selectin")
-    manager: Mapped["Employee | None"] = relationship(remote_side=[id], lazy="selectin")
-    user: Mapped["User | None"] = relationship(back_populates="employee")
+    manager: Mapped[Optional["Employee"]] = relationship(remote_side=[id], lazy="selectin")
+    user: Mapped[Optional["User"]] = relationship(back_populates="employee")
