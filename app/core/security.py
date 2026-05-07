@@ -8,16 +8,14 @@ from app.core.config import settings
 
 
 password_context = CryptContext(
-    schemes=["bcrypt_sha256", "bcrypt"],
+    schemes=["pbkdf2_sha256"],
     deprecated="auto",
-    bcrypt__truncate_error=False,
 )
 
 
 def hash_password(password: str) -> str:
-    # Guard against bcrypt backend length limits in all code paths.
     password = str(password or "")
-    return password_context.hash(password[:72])
+    return password_context.hash(password)
 
 
 def verify_password(password: str, password_hash: str) -> bool:
