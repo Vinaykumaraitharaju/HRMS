@@ -224,6 +224,9 @@ async def seed_admin(payload: dict, db: Annotated[AsyncSession, Depends(get_db)]
     if not email or not password:
         raise HTTPException(status_code=400, detail="Email and password required")
 
+    # bcrypt has a 72-byte input limit; cap admin seed password for compatibility.
+    password = str(password)[:72]
+
     try:
         # Ensure all tables exist before seeding.
         async with engine.begin() as conn:
