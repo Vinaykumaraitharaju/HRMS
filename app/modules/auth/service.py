@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import os
 import random
 import smtplib
 from datetime import UTC, datetime, timedelta
 from email.message import EmailMessage
+from urllib.request import Request, urlopen
 
 from fastapi import HTTPException, status
 from sqlalchemy import func, or_, select, update
@@ -121,6 +123,17 @@ class AuthService:
 
     # ---------------- EMAIL SENDER ----------------
     async def _send_otp_email(self, to_email: str, otp: str) -> None:
+        resend_api_key = os.getenv("RESEND_API_KEY", "").strip()
+        resend_from = os.getenv("RESEND_FROM_EMAIL", "").strip() or os.getenv("FROM_EMAIL", "").strip()
+        if resend_api_key and resend_from:
+            await self._send_otp_email_via_resend(
+                to_email=to_email,
+                otp=otp,
+                from_email=resend_from,
+                api_key=resend_api_key,
+            )
+            return
+
         smtp_host = os.getenv("SMTP_HOST", "").strip()
         smtp_port = int(os.getenv("SMTP_PORT", "587"))
         smtp_user = (
@@ -174,6 +187,61 @@ class AuthService:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"SMTP send failed: {exc}",
+            )
+
+    async def _send_otp_email_via_resend(
+        self,
+        to_email: str,
+        otp: str,
+        from_email: str,
+        api_key: str,
+    ) -> None:
+        subject = "Your Wavelynk HRMS Password Reset OTP"
+        plain_body = f"Your OTP is {otp}. It expires in 10 minutes."
+        html_body = f"""
+        <html>
+        <body style="background:#f4f7fb;font-family:Arial;text-align:center;padding:20px;">
+            <div style="background:#fff;padding:30px;border-radius:12px;">
+                <h2>Wavelynk HRMS</h2>
+                <p>Your OTP Code:</p>
+                <h1 style="letter-spacing:6px;">{otp}</h1>
+                <p>Valid for 10 minutes</p>
+            </div>
+        </body>
+        </html>
+        """
+        payload = json.dumps(
+            {
+                "from": from_email,
+                "to": [to_email],
+                "subject": subject,
+                "text": plain_body,
+                "html": html_body,
+            }
+        ).encode("utf-8")
+        req = Request(
+            "https://api.resend.com/emails",
+            data=payload,
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
+            method="POST",
+        )
+        try:
+            with urlopen(req, timeout=20) as resp:
+                if resp.status >= 400:
+                    body = resp.read().decode("utf-8", errors="ignore")
+                    raise HTTPException(
+                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        detail=f"Resend send failed: {resp.status} {body}",
+                    )
+        except HTTPException:
+            raise
+        except Exception as exc:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Resend send failed: {exc}",
             )
 
     # ---------------- HELPERS ----------------
