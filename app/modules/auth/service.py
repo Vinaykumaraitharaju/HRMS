@@ -130,6 +130,7 @@ class AuthService:
         smtp_password = (
             os.getenv("SMTP_PASSWORD", "").strip() or os.getenv("SMTP_PASS", "").strip()
         )
+        smtp_password = smtp_password.replace(" ", "")
         smtp_from = (
             os.getenv("FROM_EMAIL", "").strip()
             or os.getenv("SMTP_FROM", "").strip()
@@ -164,10 +165,16 @@ class AuthService:
         msg.set_content(plain_body)
         msg.add_alternative(html_body, subtype="html")
 
-        with smtplib.SMTP(smtp_host, smtp_port) as smtp:
-            smtp.starttls()
-            smtp.login(smtp_user, smtp_password)
-            smtp.send_message(msg)
+        try:
+            with smtplib.SMTP(smtp_host, smtp_port) as smtp:
+                smtp.starttls()
+                smtp.login(smtp_user, smtp_password)
+                smtp.send_message(msg)
+        except Exception as exc:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"SMTP send failed: {exc}",
+            )
 
     # ---------------- HELPERS ----------------
     async def _find_user_by_login(self, login: str) -> User | None:
