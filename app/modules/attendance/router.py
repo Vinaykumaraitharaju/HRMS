@@ -9,11 +9,43 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
 from app.modules.audit.service import safe_record_audit
+from app.modules.attendance.models import AttendanceAction
 from app.modules.attendance.schemas import AttendanceCapture, AttendanceRead
 from app.modules.attendance.service import AttendanceService
 from app.modules.auth.models import User
 
 router = APIRouter()
+
+
+def attendance_notification_copy(payload: AttendanceCapture) -> tuple[NotificationType, str, str]:
+    break_label = (payload.break_type or "Break").replace("_", " ").strip().title()
+
+    if payload.action == AttendanceAction.break_start:
+        return (
+            NotificationType.break_alert,
+            f"{break_label} started",
+            f"Your {break_label.lower()} has started.",
+        )
+
+    if payload.action == AttendanceAction.break_end:
+        return (
+            NotificationType.break_alert,
+            f"{break_label} ended",
+            f"Your {break_label.lower()} has ended. Welcome back.",
+        )
+
+    if payload.action == AttendanceAction.logout:
+        return (
+            NotificationType.attendance,
+            "Logged out",
+            "Your work session has been closed.",
+        )
+
+    return (
+        NotificationType.attendance,
+        "Logged in",
+        "Your attendance has been recorded successfully.",
+    )
 
 
 @router.post(
@@ -41,12 +73,13 @@ async def capture_attendance(
     )
 
     try:
+        notification_type, title, body = attendance_notification_copy(payload)
         await NotificationService(db).create(
             NotificationCreate(
                 recipient_user_id=current_user.id,
-                type=NotificationType.attendance,
-                title="Attendance captured",
-                body="Your attendance has been recorded successfully.",
+                type=notification_type,
+                title=title,
+                body=body,
             )
         )
     except Exception as exc:

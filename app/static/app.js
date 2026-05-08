@@ -190,8 +190,8 @@ document.body.dataset.view = "dashboard";
 
 const stats = [
   ["Work Hours Today", "7h 35m", "Logged since 09:15 AM", "W", "blue"],
-  ["Leave Balance", "18 days", "Annual 12 · Casual 4 · Sick 2", "O", "purple"],
-  ["Pending Requests", "3", "2 leave · 1 expense", "R", "orange"],
+  ["Leave Balance", "18 days", "Annual 12 - Casual 4 - Sick 2", "O", "purple"],
+  ["Pending Requests", "3", "2 leave - 1 expense", "R", "orange"],
   ["Announcements", "5", "2 require acknowledgement", "N", "green"],
 ];
 
@@ -832,8 +832,8 @@ function applyAttendanceLogs(logs = []) {
 
     attendanceState.locationLabel =
       attendanceState.locationStatus === "office"
-        ? `Inside office · ${attendanceState.lastDistanceMeters}m`
-        : `Outside office · ${attendanceState.lastDistanceMeters}m`;
+        ? `Inside office - ${attendanceState.lastDistanceMeters}m`
+        : `Outside office - ${attendanceState.lastDistanceMeters}m`;
   }
 
   if (attendanceState.loggedIn && workState) {
@@ -844,7 +844,7 @@ function applyAttendanceLogs(logs = []) {
   if (!attendanceState.loggedIn && workState) {
     workState.classList.remove("active");
     workState.innerHTML = attendanceState.logoutAt
-      ? `<span></span>Logged out · ${currentTimeLabel(attendanceState.logoutAt)}`
+      ? `<span></span>Logged out - ${currentTimeLabel(attendanceState.logoutAt)}`
       : "<span></span>Not logged in";
   }
 }
@@ -3515,12 +3515,12 @@ function updateAttendancePriority() {
   }
 
   if (attendanceState.locationStatus === "outside") {
-    attendancePriority.textContent = "Outside office · WFH tracking required";
+    attendancePriority.textContent = "Outside office - WFH tracking required";
     return;
   }
 
   if (attendanceState.locationStatus === "office") {
-    attendancePriority.textContent = "Inside office · ready to start shift";
+    attendancePriority.textContent = "Inside office - ready to start shift";
     return;
   }
 
@@ -3609,12 +3609,12 @@ function verifyLocation() {
 
       if (distance <= attendanceConfig.office.radiusMeters) {
         attendanceState.locationStatus = "office";
-        attendanceState.locationLabel = `Inside office · ${distance}m`;
+        attendanceState.locationLabel = `Inside office - ${distance}m`;
         attendanceState.wfhStatus = "none";
         showToast("Office location confirmed.");
       } else {
         attendanceState.locationStatus = "outside";
-        attendanceState.locationLabel = `Outside office · ${distance}m`;
+        attendanceState.locationLabel = `Outside office - ${distance}m`;
         if (!attendanceState.loggedIn && attendanceState.wfhStatus !== "requested") {
           openWfhRequestModal();
         }
@@ -3709,8 +3709,8 @@ async function captureAttendanceToBackend(action, override = {}) {
 
         attendanceState.locationLabel =
           attendanceState.locationStatus === "office"
-            ? `Inside office · ${attendanceState.lastDistanceMeters}m`
-            : `Outside office · ${attendanceState.lastDistanceMeters}m`;
+            ? `Inside office - ${attendanceState.lastDistanceMeters}m`
+            : `Outside office - ${attendanceState.lastDistanceMeters}m`;
 
         if (action === "login") {
           attendanceState.loggedIn = true;
@@ -3806,7 +3806,7 @@ function recordLogout() {
   attendanceState.activeBreakType = null;
   attendanceState.breakStartedAt = null;
   workState.classList.remove("active");
-  workState.innerHTML = `<span></span>Logged out · ${currentTimeLabel(attendanceState.logoutAt)}`;
+  workState.innerHTML = `<span></span>Logged out - ${currentTimeLabel(attendanceState.logoutAt)}`;
   updateAttendancePriority();
   refreshAttendanceDashboard();
   showToast("Logout recorded.");
@@ -4048,7 +4048,7 @@ function renderTeamStatusBoard() {
   const visibleEmployees = filterTeamStatusEmployees(visibleTeamStatusEmployees());
   if (teamStatusScope) {
     const scopeLabel = currentRole === "admin" ? "All employees" : "My team";
-    teamStatusScope.textContent = `${scopeLabel} · ${visibleEmployees.length}`;
+    teamStatusScope.textContent = `${scopeLabel} - ${visibleEmployees.length}`;
   }
   teamStatusRows.innerHTML = visibleEmployees
     .map((employee, index) => {
@@ -4063,7 +4063,7 @@ function renderTeamStatusBoard() {
               <div>
                 <strong>${employee?.name || "Employee"}</strong>
                 <small>${employee?.email || ""}</small>
-                <small>${employee?.role || ""} · ${employee?.department || ""}</small>
+                <small>${employee?.role || ""} - ${employee?.department || ""}</small>
               </div>
             </div>
           </td>
@@ -4864,7 +4864,7 @@ function renderLeaveWorkspace() {
         <div class="leave-request-head">
           <div>
             <strong>${request?.type || "Leave"}</strong>
-            <small>${request?.leaveId || ""} · ${formatDateText(request.start, { month: "short", day: "numeric" })} – ${formatDateText(request.end, { month: "short", day: "numeric" })}</small>
+            <small>${request?.leaveId || ""} - ${formatDateText(request.start, { month: "short", day: "numeric" })} – ${formatDateText(request.end, { month: "short", day: "numeric" })}</small>
           </div>
           <span class="status ${statusClassName(request?.status)}">${request?.status}</span>
         </div>
@@ -5755,7 +5755,7 @@ function renderAttachmentTray() {
         : `<span class="attachment-thumb attachment-icon">${attachmentBadgeLabel(attachment)}</span>`}
         <span>
           <strong>${escapeHtml(attachment.name)}</strong>
-          <small>${attachmentTypeLabel(attachment)} · ${formatBytes(attachment.size)}</small>
+          <small>${attachmentTypeLabel(attachment)} - ${formatBytes(attachment.size)}</small>
         </span>
         <button class="attachment-remove" type="button" data-remove-attachment="${attachment.id}" aria-label="Remove attachment">×</button>
       </div>`)
@@ -5805,7 +5805,7 @@ function attachmentPreviewLabel(attachments, body) {
   const base = attachments.length === 1
     ? `${attachmentTypeLabel(attachments[0])}: ${attachments[0].name}`
     : `${attachments.length} attachments`;
-  return body ? `${base} ? ${body}` : base;
+  return body ? `${base} - ${body}` : base;
 }
 
 function renderMessageAttachments(attachments = []) {
@@ -5826,7 +5826,7 @@ function renderMessageAttachments(attachments = []) {
               <span class="attachment-icon ${attachment.kind}">${attachmentBadgeLabel(attachment)}</span>
               <span>
                 <strong>${escapeHtml(attachment.name)}</strong>
-                <small>${attachmentTypeLabel(attachment)} · ${formatBytes(attachment.size)}</small>
+                <small>${attachmentTypeLabel(attachment)} - ${formatBytes(attachment.size)}</small>
                 <em>Open preview</em>
               </span>
             </div>
@@ -6003,7 +6003,7 @@ function renderThread() {
         <strong>${name}</strong>
         ${body ? `<p>${formatMessageBody(body, mentions)}</p>` : ""}
         ${renderMessageAttachments(attachments)}
-        <time>${time}${side === "right" ? ` ? ${read ? "Read" : "Sent"}` : ""}</time>
+        <time>${time}${side === "right" ? ` - ${read ? "Read" : "Sent"}` : ""}</time>
         ${typeof body === "string" && body.toLowerCase().includes("great") ? `<span class="reaction">Heart 1</span>` : ""}
       </div>`)
     .join("");
@@ -6071,7 +6071,7 @@ function renderConversationMeta() {
   const roleLabel = String(active.role || "user");
   const roleText = roleLabel.charAt(0).toUpperCase() + roleLabel.slice(1);
   document.querySelector("#threadName").textContent = displayName;
-  document.querySelector("#threadRole").textContent = `${active.online ? "Online" : "Away"} ? ${isSelf ? "You" : roleText}`;
+  document.querySelector("#threadRole").textContent = `${active.online ? "Online" : "Away"} - ${isSelf ? "You" : roleText}`;
   threadAvatar.textContent = displayName.slice(0, 1);
   threadAvatar.classList.toggle("online", active.online);
   threadAvatar.dataset.avatarConversation = active.id;
@@ -6142,7 +6142,7 @@ function renderMembersPopover() {
       ${memberProfiles().map((person) => `
         <div>
           <span class="mini-avatar ${person.online ? "online" : ""}">${safeInitial(person?.name)}</span>
-          <span><b>${person.name}</b><small>${person.role} · ${person.department}</small></span>
+          <span><b>${person.name}</b><small>${person.role} - ${person.department}</small></span>
         </div>`).join("")}
     </div>`;
 }
@@ -6155,9 +6155,9 @@ function renderShared() {
   }
   chatThread.innerHTML = `
     <div class="shared-grid">
-      <article><strong>LT Planning Agenda.docx</strong><span>Shared by ${active.name} · 10:42</span></article>
-      <article><strong>Leave Workflow Notes.pdf</strong><span>People Ops · Yesterday</span></article>
-      <article><strong>Backlog Intake.xlsx</strong><span>Product Team · Monday</span></article>
+      <article><strong>LT Planning Agenda.docx</strong><span>Shared by ${active.name} - 10:42</span></article>
+      <article><strong>Leave Workflow Notes.pdf</strong><span>People Ops - Yesterday</span></article>
+      <article><strong>Backlog Intake.xlsx</strong><span>Product Team - Monday</span></article>
     </div>`;
 }
 
@@ -6279,7 +6279,7 @@ function renderMentionPicker() {
     .map((person) => `
       <button type="button" data-mention="${person.id}">
         <span class="mini-avatar ${person.online ? "online" : ""}">${safeInitial(person?.name)}</span>
-        <span><strong>${person.name}</strong><small>${person.role} · ${person.department}</small></span>
+        <span><strong>${person.name}</strong><small>${person.role} - ${person.department}</small></span>
       </button>`)
     .join("") || `<div class="mention-empty">No matching members</div>`;
   mentionPicker.classList.remove("hidden");
@@ -6333,7 +6333,7 @@ function renderPeoplePicker() {
     .map((person) => `
       <button class="person-result ${pendingPeople.has(person.id) ? "selected" : ""}" type="button" data-person="${person.id}">
         <span class="mini-avatar ${person.online ? "online" : ""}">${safeInitial(person?.name)}</span>
-        <span><strong>${person.name}</strong><small>${person.email} · ${person.department}</small></span>
+        <span><strong>${person.name}</strong><small>${person.email} - ${person.department}</small></span>
         <em>${person.role}</em>
       </button>`)
     .join("") || `<div class="empty-state">No people found.</div>`;
@@ -6387,8 +6387,14 @@ async function confirmAddPeople() {
   }
 }
 
+function closeHeaderDropdowns() {
+  notificationDropdown?.classList.remove("open");
+  profileDropdown?.classList.remove("open");
+}
+
 function bindInteractions() {
-  notificationToggle?.addEventListener("click", () => {
+  notificationToggle?.addEventListener("click", (event) => {
+    event.stopPropagation();
     notificationDropdown.classList.toggle("open");
     profileDropdown.classList.remove("open");
     loadNotificationState();
@@ -6398,9 +6404,21 @@ function bindInteractions() {
     });
   });
 
-  profileToggle?.addEventListener("click", () => {
+  notificationDropdown?.addEventListener("click", (event) => {
+    event.stopPropagation();
+  });
+
+  profileToggle?.addEventListener("click", (event) => {
+    event.stopPropagation();
     profileDropdown.classList.toggle("open");
     notificationDropdown.classList.remove("open");
+  });
+  profileDropdown?.addEventListener("click", (event) => {
+    event.stopPropagation();
+  });
+  document.addEventListener("click", closeHeaderDropdowns);
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closeHeaderDropdowns();
   });
   profileHeaderAvatar?.addEventListener("click", (event) => {
     event.stopPropagation();
@@ -6910,8 +6928,22 @@ function formatWorkedDuration(minutes) {
   const mins = safeMinutes % 60;
   return `${hours}h ${String(mins).padStart(2, "0")}m`;
 }
+
+function dashboardGreeting(now = new Date()) {
+  const hour = now.getHours();
+  if (hour < 5) return "Good night";
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  if (hour < 21) return "Good evening";
+  return "Good night";
+}
+
 function updateClock() {
   const now = new Date();
+  const greeting = document.querySelector("#dashboardGreeting");
+  if (greeting) {
+    greeting.textContent = dashboardGreeting(now);
+  }
 
   liveClock.textContent = now.toLocaleString([], {
     weekday: "long",
@@ -6928,12 +6960,12 @@ function updateClock() {
     );
 
     workState.classList.add("active");
-    workState.innerHTML = `<span></span>Logged in · Today ${formatWorkedDuration(totalToday)} · Session ${formatWorkedDuration(currentSessionMinutes)}`;
+    workState.innerHTML = `<span></span>Logged in - Today ${formatWorkedDuration(totalToday)} - Session ${formatWorkedDuration(currentSessionMinutes)}`;
   } else if (workState) {
     workState.classList.remove("active");
 
     if (attendanceState.logoutAt) {
-      workState.innerHTML = `<span></span>Logged out · Today ${formatWorkedDuration(totalToday)}`;
+      workState.innerHTML = `<span></span>Logged out - Today ${formatWorkedDuration(totalToday)}`;
     } else {
       workState.innerHTML = "<span></span>Not logged in";
     }
