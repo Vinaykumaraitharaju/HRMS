@@ -4110,3 +4110,75 @@ body[data-view="chat"] .chat-thread {
   gap: 12px !important;
   margin: 0 !important;
 }
+
+/* Chat layout repair: reserve visible space for the composer instead of letting messages consume it. */
+body[data-view="chat"] .teams-thread {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  padding: 14px 16px 16px !important;
+}
+
+body[data-view="chat"] .thread-header {
+  flex: 0 0 auto !important;
+}
+
+body[data-view="chat"] .thread-tabs {
+  flex: 0 0 auto !important;
+}
+
+body[data-view="chat"] .chat-thread {
+  flex: 1 1 0 !important;
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding: 18px !important;
+  margin: 0 0 12px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+}
+
+body[data-view="chat"] .chat-input {
+  flex: 0 0 76px !important;
+  min-height: 76px !important;
+  max-height: 86px !important;
+  position: relative !important;
+  bottom: auto !important;
+  transform: none !important;
+  display: grid !important;
+  grid-template-columns: minmax(260px, 1fr) max-content !important;
+  align-items: center !important;
+  gap: 12px !important;
+  padding: 10px 12px !important;
+  margin: 0 !important;
+  overflow: visible !important;
+  background: rgba(5, 8, 8, 0.36) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 18px 18px 24px 24px !important;
+  box-shadow: 0 -10px 26px rgba(0, 0, 0, 0.18) !important;
+}
+
+body[data-view="chat"] .chat-input textarea#chatMessage {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  grid-column: 1 !important;
+  width: 100% !important;
+  height: 52px !important;
+  min-height: 52px !important;
+  max-height: 52px !important;
+  padding: 14px 16px !important;
+  margin: 0 !important;
+  resize: none !important;
+}
+
+body[data-view="chat"] .composer-tools {
+  grid-column: 2 !important;
+  justify-self: end !important;
+  align-self: center !important;
+}

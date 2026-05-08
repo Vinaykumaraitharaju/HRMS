@@ -932,8 +932,8 @@ function syncViewportLayout() {
   if (teamsChatRail) teamsChatRail.style.height = `${availableHeight}px`;
   if (teamsThread) teamsThread.style.height = `${availableHeight}px`;
   if (chatThread) {
-    chatThread.style.height = "100%";
-    chatThread.style.maxHeight = "100%";
+    chatThread.style.height = "";
+    chatThread.style.maxHeight = "";
   }
 }
 
