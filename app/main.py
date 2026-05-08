@@ -146,6 +146,32 @@ async def _migrate_auth_totp_columns() -> None:
                 )
 
 
+async def _migrate_nullable_workflow_columns() -> None:
+    nullable_columns = {
+        "leave_requests": ["supervisor_id", "manager_id", "decision_note"],
+        "timesheets": ["approver_id", "decision_note"],
+        "timesheet_entries": ["notes"],
+        "calendar_events": ["description", "location", "meeting_link"],
+        "chat_messages": ["recipient_id", "group_id"],
+    }
+
+    async with engine.begin() as conn:
+        if conn.dialect.name == "postgresql":
+            for table_name, column_names in nullable_columns.items():
+                for column_name in column_names:
+                    await conn.execute(
+                        text(
+                            f'ALTER TABLE IF EXISTS "{table_name}" '
+                            f'ALTER COLUMN "{column_name}" DROP NOT NULL'
+                        )
+                    )
+            return
+
+        # New SQLite databases use the SQLAlchemy model metadata above. Existing
+        # SQLite schema rewrites are intentionally avoided here because Render
+        # production uses Postgres and SQLite ALTER COLUMN is not supported.
+
+
 def create_app() -> FastAPI:
     app = FastAPI(title=settings.app_name, version="0.1.0")
     static_dir = Path(__file__).resolve().parent / "static"
@@ -225,6 +251,8 @@ def create_app() -> FastAPI:
             except OperationalError:
                 # If startup races with initial DB bootstrap, continue without failing boot.
                 pass
+
+        await _migrate_nullable_workflow_columns()
 
         admin_email = (settings.admin_email or "").strip().lower()
         admin_password = (settings.admin_password or "").strip()

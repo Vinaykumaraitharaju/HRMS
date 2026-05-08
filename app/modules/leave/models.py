@@ -38,9 +38,9 @@ class LeaveRequest(Base):
     status: Mapped[LeaveStatus] = mapped_column(
         Enum(LeaveStatus), default=LeaveStatus.pending_supervisor
     )
-    supervisor_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
-    manager_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
-    decision_note: Mapped[str] = mapped_column(String(500))
+    supervisor_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=True)
+    manager_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=True)
+    decision_note: Mapped[str] = mapped_column(String(500), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

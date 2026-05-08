@@ -35,8 +35,8 @@ class ChatMessage(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     sender_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
-    recipient_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
-    group_id: Mapped[int] = mapped_column(ForeignKey("chat_groups.id"), index=True)
+    recipient_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True, nullable=True)
+    group_id: Mapped[int] = mapped_column(ForeignKey("chat_groups.id"), index=True, nullable=True)
     body: Mapped[str] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
