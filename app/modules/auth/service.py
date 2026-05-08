@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import os
 import random
 import smtplib
@@ -20,6 +21,7 @@ from app.modules.auth.schemas import Token, UserCreate
 from app.modules.employees.models import Employee
 
 EMAIL_TIMEOUT_SECONDS = 15
+logger = logging.getLogger("hrms.auth")
 
 
 class AuthService:
@@ -49,12 +51,12 @@ class AuthService:
         user = await self._find_user_by_login(login)
 
         if not user or not user.is_active:
-            print(f"Password reset OTP requested for unknown/inactive login: {login}")
+            logger.info("Password reset OTP requested for unknown/inactive login=%s", login)
             return {
                 "message": "If the account exists, an OTP has been sent to the registered email."
             }
 
-        print(f"Password reset OTP requested for user_id={user.id} email={user.email}")
+        logger.info("Password reset OTP requested user_id=%s email=%s", user.id, user.email)
 
         otp = f"{random.SystemRandom().randint(100000, 999999)}"
         otp_hash = self._otp_hash(user.id, otp)
@@ -83,13 +85,15 @@ class AuthService:
         try:
             await self._send_otp_email(user.email, otp)
         except HTTPException as exc:
-            print(
-                f"Password reset OTP email failed for user_id={user.id} "
-                f"email={user.email}: {exc.detail}"
+            logger.warning(
+                "Password reset OTP email failed user_id=%s email=%s detail=%s",
+                user.id,
+                user.email,
+                exc.detail,
             )
             raise
 
-        print(f"Password reset OTP email sent for user_id={user.id} email={user.email}")
+        logger.info("Password reset OTP email sent user_id=%s email=%s", user.id, user.email)
 
         return {
             "message": "If the account exists, an OTP has been sent to the registered email."
@@ -140,8 +144,22 @@ class AuthService:
     async def _send_otp_email(self, to_email: str, otp: str) -> None:
         resend_api_key = os.getenv("RESEND_API_KEY", "").strip()
         resend_from = os.getenv("RESEND_FROM_EMAIL", "").strip() or os.getenv("FROM_EMAIL", "").strip()
+        smtp_host = os.getenv("SMTP_HOST", "").strip()
+        smtp_user = (
+            os.getenv("SMTP_USERNAME", "").strip()
+            or os.getenv("SMTP_USER", "").strip()
+        )
+
+        logger.info(
+            "Password reset email provider check resend_configured=%s smtp_configured=%s smtp_host=%s render=%s",
+            bool(resend_api_key and resend_from),
+            bool(smtp_host and smtp_user),
+            smtp_host or "not-set",
+            os.getenv("RENDER", "").lower() == "true",
+        )
+
         if resend_api_key and resend_from:
-            print(f"Sending password reset OTP through Resend to {to_email}")
+            logger.info("Sending password reset OTP through Resend to=%s", to_email)
             await self._send_otp_email_via_resend(
                 to_email=to_email,
                 otp=otp,
@@ -150,12 +168,7 @@ class AuthService:
             )
             return
 
-        smtp_host = os.getenv("SMTP_HOST", "").strip()
         smtp_port = int(os.getenv("SMTP_PORT", "587"))
-        smtp_user = (
-            os.getenv("SMTP_USERNAME", "").strip()
-            or os.getenv("SMTP_USER", "").strip()
-        )
         smtp_password = (
             os.getenv("SMTP_PASSWORD", "").strip() or os.getenv("SMTP_PASS", "").strip()
         )
@@ -185,7 +198,7 @@ class AuthService:
 
         if not smtp_host or not smtp_user or not smtp_password:
             if os.getenv("ALLOW_DEV_OTP", "").strip().lower() in {"1", "true", "yes"}:
-                print(f"[DEV OTP] {otp}")
+                logger.warning("[DEV OTP] %s", otp)
                 return
 
             raise HTTPException(
@@ -205,15 +218,28 @@ class AuthService:
         msg.add_alternative(html_body, subtype="html")
 
         try:
-            print(f"Sending password reset OTP through SMTP host={smtp_host} to {to_email}")
+            logger.info("Sending password reset OTP through SMTP host=%s to=%s", smtp_host, to_email)
             with smtplib.SMTP(smtp_host, smtp_port, timeout=EMAIL_TIMEOUT_SECONDS) as smtp:
                 smtp.starttls()
                 smtp.login(smtp_user, smtp_password)
                 smtp.send_message(msg)
         except Exception as exc:
+            logger.warning(
+                "SMTP password reset OTP send failed host=%s to=%s error=%s",
+                smtp_host,
+                to_email,
+                exc,
+            )
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"SMTP send failed: {exc}",
+                detail=(
+                    f"SMTP send failed from host={smtp_host} port={smtp_port}. "
+                    "On Render Free, outbound SMTP ports 25, 465, and 587 are blocked. "
+                    "Fix: upgrade the Render web service to a paid instance, or use an "
+                    "SMTP provider that supports an allowed port such as 2525. Gmail SMTP "
+                    "does not support port 2525. "
+                    f"Original error: {exc}"
+                ),
             )
 
     async def _send_otp_email_via_resend(

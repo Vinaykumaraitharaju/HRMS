@@ -325,6 +325,14 @@
       successBox.textContent = isError ? "" : message;
     }
 
+    function friendlyErrorMessage(message = "") {
+      if (message.includes("SMTP send failed")) {
+        return "OTP email failed because Render Free blocks SMTP ports 25, 465, and 587. Upgrade Render or use an SMTP provider with port 2525. Gmail SMTP will not work on Render Free.";
+      }
+
+      return message;
+    }
+
     function setLoading(button, isLoading, loadingText = "Please wait...") {
       if (!button) return;
 
@@ -370,7 +378,7 @@
         : await res.text();
 
       if (!res.ok) {
-        throw new Error(data?.detail || data?.message || data || "Request failed");
+        throw new Error(friendlyErrorMessage(data?.detail || data?.message || data || "Request failed"));
       }
 
       return data;
