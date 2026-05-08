@@ -3289,20 +3289,24 @@ body[data-view="chat"] .teams-layout {
 }
 
 body[data-view="chat"] .teams-thread {
-  height: auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
   min-height: 0 !important;
-  overflow: visible !important;
-  grid-template-rows: auto auto minmax(0, 1fr) 126px !important;
-  padding-bottom: 22px !important;
+  overflow: hidden !important;
+  padding-bottom: 12px !important;
 }
 
 body[data-view="chat"] .chat-thread {
-  height: auto !important;
-  max-height: none !important;
+  flex: 1 !important;
   min-height: 0 !important;
+  height: 100% !important;
   overflow-y: auto !important;
-  flex: 1;
   overflow-x: hidden !important;
+  padding: 18px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
 }
 
 body[data-view="chat"] .chat-input {
@@ -3368,12 +3372,7 @@ body[data-view="chat"] #sendChat {
 }
 
 /* FIX: keep chat input always visible */
-.chat-input {
-  flex-shrink: 0;
-  position: sticky;
-  bottom: 0;
-  z-index: 5;
-}
+
 
 /* Team Pulse polish: compact header and docked composer. */
 body[data-view="chat"] .teams-thread {
@@ -6319,4 +6318,28 @@ body[data-view="chat"] .composer-tools {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Final chat layout guard: keep the thread scrollable and the composer docked. */
+body[data-view="chat"] .teams-thread {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  padding-bottom: 12px !important;
+}
+
+body[data-view="chat"] .chat-thread {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding: 18px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+  margin: 0 !important;
 }
