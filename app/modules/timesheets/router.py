@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_user, require_roles
+from app.modules.audit.service import safe_record_audit
 from app.modules.auth.models import Role, User
 from app.modules.timesheets.schemas import (
     TimesheetCreate,
@@ -65,6 +66,16 @@ async def create_timesheet(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     timesheet = await TimesheetService(db).create(current_user, payload)
+    await safe_record_audit(
+        db,
+        category="Timesheets",
+        action="timesheet.created",
+        message=f"Timesheet created: week {timesheet.week_start}",
+        actor=current_user,
+        entity_type="timesheet",
+        entity_id=timesheet.id,
+        details=payload.model_dump(),
+    )
 
     await _safe_notify(
         db=db,
@@ -86,6 +97,16 @@ async def add_entry(
     timesheet = await TimesheetService(db).add_entry(
         timesheet_id, current_user, payload
     )
+    await safe_record_audit(
+        db,
+        category="Timesheets",
+        action="timesheet.entry_added",
+        message=f"Timesheet entry saved: {payload.entry_date}",
+        actor=current_user,
+        entity_type="timesheet",
+        entity_id=timesheet.id,
+        details=payload.model_dump(),
+    )
 
     await _safe_notify(
         db=db,
@@ -104,6 +125,16 @@ async def upsert_entry_by_date(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     timesheet = await TimesheetService(db).upsert_entry_by_date(current_user, payload)
+    await safe_record_audit(
+        db,
+        category="Timesheets",
+        action="timesheet.entry_saved",
+        message=f"Timesheet entry saved: {payload.entry_date}",
+        actor=current_user,
+        entity_type="timesheet",
+        entity_id=timesheet.id,
+        details=payload.model_dump(),
+    )
 
     await _safe_notify(
         db=db,
@@ -122,6 +153,15 @@ async def delete_entry_by_date(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     await TimesheetService(db).delete_entry_by_date(current_user, entry_date)
+    await safe_record_audit(
+        db,
+        category="Timesheets",
+        action="timesheet.entry_deleted",
+        message=f"Timesheet entry deleted: {entry_date}",
+        actor=current_user,
+        entity_type="timesheet_entry",
+        entity_id=entry_date.isoformat(),
+    )
 
     await _safe_notify(
         db=db,
@@ -152,6 +192,15 @@ async def submit_timesheet_week(
         timesheet = await TimesheetService(db).create(current_user, payload)
 
     submitted = await TimesheetService(db).submit(timesheet.id, current_user)
+    await safe_record_audit(
+        db,
+        category="Timesheets",
+        action="timesheet.submitted",
+        message=f"Timesheet submitted: #{submitted.id}",
+        actor=current_user,
+        entity_type="timesheet",
+        entity_id=submitted.id,
+    )
 
     await _safe_notify(
         db=db,
@@ -187,6 +236,15 @@ async def submit_timesheet(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     timesheet = await TimesheetService(db).submit(timesheet_id, current_user)
+    await safe_record_audit(
+        db,
+        category="Timesheets",
+        action="timesheet.submitted",
+        message=f"Timesheet submitted: #{timesheet.id}",
+        actor=current_user,
+        entity_type="timesheet",
+        entity_id=timesheet.id,
+    )
 
     await _safe_notify(
         db=db,
@@ -208,6 +266,16 @@ async def approve_timesheet(
     ],
 ):
     timesheet = await TimesheetService(db).approve(timesheet_id, current_user, payload)
+    await safe_record_audit(
+        db,
+        category="Timesheets",
+        action="timesheet.approved",
+        message=f"Timesheet approved: #{timesheet.id}",
+        actor=current_user,
+        entity_type="timesheet",
+        entity_id=timesheet.id,
+        details=payload.model_dump(),
+    )
 
     await _safe_notify(
         db=db,
@@ -229,6 +297,16 @@ async def reject_timesheet(
     ],
 ):
     timesheet = await TimesheetService(db).reject(timesheet_id, current_user, payload)
+    await safe_record_audit(
+        db,
+        category="Timesheets",
+        action="timesheet.rejected",
+        message=f"Timesheet rejected: #{timesheet.id}",
+        actor=current_user,
+        entity_type="timesheet",
+        entity_id=timesheet.id,
+        details=payload.model_dump(),
+    )
 
     await _safe_notify(
         db=db,

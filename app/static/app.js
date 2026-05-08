@@ -1969,37 +1969,20 @@ function saveAdminEmployees() {
   renderTeamStatusBoard();
 }
 function seedAuditLogs() {
-  return [
-    { at: new Date().toISOString(), type: "Login", actor: currentRoleProfile.name, event: `${currentRoleProfile.label} login session started` },
-  ];
+  return [];
 }
 
 function loadAuditLogs() {
-  try {
-    const saved = localStorage.getItem("hrms_audit_logs");
-    return saved ? JSON.parse(saved) : seedAuditLogs();
-  } catch {
-    return seedAuditLogs();
-  }
+  return seedAuditLogs();
 }
 
 function saveAuditLogs() {
-  try {
-    localStorage.setItem("hrms_audit_logs", JSON.stringify(auditLogs));
-  } catch {
-    // Audit logs remain available in memory if browser storage is full.
-  }
+  // Audit logs are persisted by the backend.
 }
 
 function recordAudit(type, event) {
-  auditLogs.unshift({
-    at: new Date().toISOString(),
-    type,
-    actor: currentRoleProfile.name,
-    event,
-  });
-  auditLogs = auditLogs.slice(0, 80);
-  saveAuditLogs();
+  auditLogs.unshift({ at: new Date().toISOString(), type, actor: currentRoleProfile.name, event });
+  auditLogs = auditLogs.slice(0, 20);
   renderAuditLogs();
 }
 
@@ -2027,9 +2010,28 @@ function renderAuditLogs() {
     .join("") || `<tr><td colspan="4">No audit records for this filter.</td></tr>`;
 }
 
-function openAuditLogAdmin() {
+async function loadAuditLogsFromApi() {
+  const filter = auditFilterInput?.value || "All";
+  const params = new URLSearchParams({ limit: "150" });
+  if (filter !== "All") params.set("category", filter);
+  const rows = await fetchJson(`/api/v1/audit-logs?${params.toString()}`);
+  auditLogs = (rows || []).map((log) => ({
+    at: log.created_at,
+    type: log.category,
+    actor: log.actor_email || `User #${log.actor_user_id || "-"}`,
+    event: log.message || log.action,
+  }));
+}
+
+async function openAuditLogAdmin() {
   auditLogPanel.classList.remove("hidden");
-  renderAuditLogs();
+  try {
+    auditLogRows.innerHTML = `<tr><td colspan="4">Loading audit records...</td></tr>`;
+    await loadAuditLogsFromApi();
+    renderAuditLogs();
+  } catch (err) {
+    auditLogRows.innerHTML = `<tr><td colspan="4">${err.message || "Audit logs could not be loaded."}</td></tr>`;
+  }
   scrollAdminPanelIntoView(auditLogPanel);
   showToast("Audit logs opened.");
 }
@@ -6562,7 +6564,14 @@ function bindInteractions() {
     if (!button) return;
     handleAssignmentRuleAction(button);
   });
-  auditFilterInput?.addEventListener("change", renderAuditLogs);
+auditFilterInput?.addEventListener("change", async () => {
+  try {
+    await loadAuditLogsFromApi();
+    renderAuditLogs();
+  } catch (err) {
+    auditLogRows.innerHTML = `<tr><td colspan="4">${err.message || "Audit logs could not be loaded."}</td></tr>`;
+  }
+});
   leavePolicyForm?.addEventListener("submit", submitLeavePolicyAdmin);
   leaveTypeAdminForm?.addEventListener("submit", submitLeaveTypeAdmin);
   leaveTypePolicyList?.addEventListener("click", (event) => {

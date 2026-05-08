@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
+from app.modules.audit.service import safe_record_audit
 from app.modules.attendance.schemas import AttendanceCapture, AttendanceRead
 from app.modules.attendance.service import AttendanceService
 from app.modules.auth.models import User
@@ -24,6 +25,20 @@ async def capture_attendance(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     result = await AttendanceService(db).capture(current_user, payload)
+    await safe_record_audit(
+        db,
+        category="Attendance",
+        action=f"attendance.{payload.action.value if hasattr(payload.action, 'value') else payload.action}",
+        message=f"Attendance captured: {payload.action}",
+        actor=current_user,
+        entity_type="attendance",
+        entity_id=result.id,
+        details={
+            "employee_id": result.employee_id,
+            "work_mode": result.work_mode,
+            "distance_meters": result.distance_meters,
+        },
+    )
 
     try:
         await NotificationService(db).create(

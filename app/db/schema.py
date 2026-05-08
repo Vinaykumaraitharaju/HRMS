@@ -1,4 +1,5 @@
 from app.core.database import Base
+from app.modules.audit.models import AuditLog
 from app.modules.attendance.models import AttendanceLog
 from app.modules.auth.models import RoleModel, User
 from app.modules.calendar.models import CalendarEvent
@@ -10,6 +11,7 @@ from app.modules.timesheets.models import Timesheet, TimesheetEntry
 
 __all__ = [
     "AttendanceLog",
+    "AuditLog",
     "Base",
     "CalendarEvent",
     "ChatGroup",

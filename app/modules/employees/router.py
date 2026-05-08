@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.dependencies import get_current_user, require_roles
 from app.modules.auth.models import Role, User
+from app.modules.audit.service import safe_record_audit
 from app.modules.employees.schemas import (
     DepartmentCreate,
     DepartmentRead,
@@ -22,9 +23,19 @@ router = APIRouter()
 async def create_department(
     payload: DepartmentCreate,
     db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_roles(Role.admin, Role.hr))],
+    current_user: Annotated[User, Depends(require_roles(Role.admin, Role.hr))],
 ):
-    return await EmployeeService(db).create_department(payload)
+    department = await EmployeeService(db).create_department(payload)
+    await safe_record_audit(
+        db,
+        category="Employees",
+        action="department.created",
+        message=f"Department created: {department.name}",
+        actor=current_user,
+        entity_type="department",
+        entity_id=department.id,
+    )
+    return department
 
 
 @router.get("/departments", response_model=list[DepartmentRead])
@@ -39,9 +50,20 @@ async def list_departments(
 async def create_employee(
     payload: EmployeeCreate,
     db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_roles(Role.admin, Role.hr))],
+    current_user: Annotated[User, Depends(require_roles(Role.admin, Role.hr))],
 ):
-    return await EmployeeService(db).create_employee(payload)
+    employee = await EmployeeService(db).create_employee(payload)
+    await safe_record_audit(
+        db,
+        category="Employees",
+        action="employee.created",
+        message=f"Employee created: {employee.first_name} {employee.last_name} ({employee.employee_code})",
+        actor=current_user,
+        entity_type="employee",
+        entity_id=employee.id,
+        details={"employee_code": employee.employee_code},
+    )
+    return employee
 
 
 @router.get("", response_model=list[EmployeeRead])
@@ -66,15 +88,35 @@ async def update_employee(
     employee_id: int,
     payload: EmployeeUpdate,
     db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_roles(Role.admin, Role.hr))],
+    current_user: Annotated[User, Depends(require_roles(Role.admin, Role.hr))],
 ):
-    return await EmployeeService(db).update_employee(employee_id, payload)
+    employee = await EmployeeService(db).update_employee(employee_id, payload)
+    await safe_record_audit(
+        db,
+        category="Employees",
+        action="employee.updated",
+        message=f"Employee updated: {employee.first_name} {employee.last_name} ({employee.employee_code})",
+        actor=current_user,
+        entity_type="employee",
+        entity_id=employee.id,
+        details=payload.model_dump(exclude_unset=True),
+    )
+    return employee
 
 
 @router.delete("/{employee_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_employee(
     employee_id: int,
     db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_roles(Role.admin))],
+    current_user: Annotated[User, Depends(require_roles(Role.admin))],
 ) -> None:
     await EmployeeService(db).delete_employee(employee_id)
+    await safe_record_audit(
+        db,
+        category="Employees",
+        action="employee.deactivated",
+        message=f"Employee deactivated: #{employee_id}",
+        actor=current_user,
+        entity_type="employee",
+        entity_id=employee_id,
+    )

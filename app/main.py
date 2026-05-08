@@ -2,13 +2,16 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from fastapi import FastAPI, Request
-from fastapi.responses import FileResponse, RedirectResponse
+import logging
+
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 from sqlalchemy import text
 from sqlalchemy import select
-from sqlalchemy.exc import OperationalError
+from sqlalchemy.exc import OperationalError, SQLAlchemyError
 
 from app.core.config import settings
 from app.core.database import Base
@@ -20,6 +23,7 @@ from app.db import schema  # noqa: F401  # Ensure model metadata is registered
 from app.modules.auth.models import Role, RoleModel, User
 
 from app.modules.activity.router import router as activity_router
+from app.modules.audit.router import router as audit_router
 from app.modules.attendance.router import router as attendance_router
 from app.modules.auth.router import router as auth_router
 from app.modules.calendar.router import router as calendar_router
@@ -28,6 +32,9 @@ from app.modules.employees.router import router as employees_router
 from app.modules.leave.router import router as leave_router
 from app.modules.notifications.router import router as notifications_router
 from app.modules.timesheets.router import router as timesheets_router
+
+
+logger = logging.getLogger("hrms.api")
 
 
 def is_authenticated(request: Request) -> bool:
@@ -111,6 +118,54 @@ def create_app() -> FastAPI:
     app = FastAPI(title=settings.app_name, version="0.1.0")
     static_dir = Path(__file__).resolve().parent / "static"
 
+    @app.exception_handler(HTTPException)
+    async def http_exception_handler(request: Request, exc: HTTPException):
+        logger.warning(
+            "API error %s %s -> %s: %s",
+            request.method,
+            request.url.path,
+            exc.status_code,
+            exc.detail,
+        )
+        return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+
+    @app.exception_handler(RequestValidationError)
+    async def validation_exception_handler(request: Request, exc: RequestValidationError):
+        errors = exc.errors()
+        logger.warning(
+            "API validation error %s %s -> 422: %s",
+            request.method,
+            request.url.path,
+            errors,
+        )
+        return JSONResponse(status_code=422, content={"detail": errors})
+
+    @app.exception_handler(SQLAlchemyError)
+    async def sqlalchemy_exception_handler(request: Request, exc: SQLAlchemyError):
+        logger.exception(
+            "Database error %s %s: %s",
+            request.method,
+            request.url.path,
+            exc,
+        )
+        return JSONResponse(
+            status_code=500,
+            content={"detail": "Database error. Check Render logs for details."},
+        )
+
+    @app.exception_handler(Exception)
+    async def unhandled_exception_handler(request: Request, exc: Exception):
+        logger.exception(
+            "Unhandled error %s %s: %s",
+            request.method,
+            request.url.path,
+            exc,
+        )
+        return JSONResponse(
+            status_code=500,
+            content={"detail": "Unexpected server error. Check Render logs for details."},
+        )
+
     @app.on_event("startup")
     async def normalize_role_enum_values() -> None:
         await _migrate_sqlite_employees_reports_to_nullable()
@@ -166,6 +221,7 @@ def create_app() -> FastAPI:
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
     app.include_router(auth_router, prefix="/api/v1/auth", tags=["auth"])
+    app.include_router(audit_router, prefix="/api/v1/audit-logs", tags=["audit"])
     app.include_router(activity_router, prefix="/api/v1/activity", tags=["activity"])
     app.include_router(employees_router, prefix="/api/v1/employees", tags=["employees"])
     app.include_router(leave_router, prefix="/api/v1/leaves", tags=["leaves"])

@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_user, require_roles
+from app.modules.audit.service import safe_record_audit
 from app.modules.auth.models import Role, User
 from app.modules.leave.schemas import (
     LeaveApply,
@@ -88,6 +89,16 @@ async def apply_leave(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     leave = await LeaveService(db).apply(current_user, payload)
+    await safe_record_audit(
+        db,
+        category="Leave",
+        action="leave.submitted",
+        message=f"Leave request submitted: #{leave.id}",
+        actor=current_user,
+        entity_type="leave",
+        entity_id=leave.id,
+        details=payload.model_dump(),
+    )
 
     await _safe_notify(
         db=db,
@@ -117,6 +128,16 @@ async def supervisor_approve(
     ],
 ):
     leave = await LeaveService(db).supervisor_approve(leave_id, current_user, payload)
+    await safe_record_audit(
+        db,
+        category="Leave",
+        action="leave.supervisor_approved",
+        message=f"Leave supervisor approved: #{leave.id}",
+        actor=current_user,
+        entity_type="leave",
+        entity_id=leave.id,
+        details=payload.model_dump(),
+    )
 
     await _safe_notify(
         db=db,
@@ -136,6 +157,16 @@ async def manager_approve(
     current_user: Annotated[User, Depends(require_roles(Role.manager, Role.admin))],
 ):
     leave = await LeaveService(db).manager_approve(leave_id, current_user, payload)
+    await safe_record_audit(
+        db,
+        category="Leave",
+        action="leave.approved",
+        message=f"Leave approved: #{leave.id}",
+        actor=current_user,
+        entity_type="leave",
+        entity_id=leave.id,
+        details=payload.model_dump(),
+    )
 
     await _safe_notify(
         db=db,
@@ -157,6 +188,16 @@ async def reject_leave(
     ],
 ):
     leave = await LeaveService(db).reject(leave_id, current_user, payload)
+    await safe_record_audit(
+        db,
+        category="Leave",
+        action="leave.rejected",
+        message=f"Leave rejected: #{leave.id}",
+        actor=current_user,
+        entity_type="leave",
+        entity_id=leave.id,
+        details=payload.model_dump(),
+    )
 
     await _safe_notify(
         db=db,
@@ -175,6 +216,15 @@ async def revoke_leave(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     leave = await LeaveService(db).revoke(leave_id, current_user)
+    await safe_record_audit(
+        db,
+        category="Leave",
+        action="leave.revoked",
+        message=f"Leave revoked: #{leave.id}",
+        actor=current_user,
+        entity_type="leave",
+        entity_id=leave.id,
+    )
 
     await _safe_notify(
         db=db,
