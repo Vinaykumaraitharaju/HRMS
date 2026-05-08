@@ -49,35 +49,6 @@ class AuthService:
                 detail="Invalid email/employee ID or password",
             )
 
-        if user.totp_enabled:
-            if not self._verify_totp_code(user, totp_code):
-                return LoginResponse(
-                    mfa_required=True,
-                    message="Enter the 6-digit code from Microsoft Authenticator.",
-                )
-        else:
-            if not user.totp_secret:
-                user.totp_secret = pyotp.random_base32()
-                await self.db.commit()
-                await self.db.refresh(user)
-
-            if not totp_code:
-                return LoginResponse(
-                    mfa_setup_required=True,
-                    message="Set up Microsoft Authenticator to continue.",
-                    **self._totp_setup_payload(user),
-                )
-
-            if not self._verify_totp_code(user, totp_code):
-                return LoginResponse(
-                    mfa_setup_required=True,
-                    message="Invalid Authenticator code. Scan the QR and try again.",
-                    **self._totp_setup_payload(user),
-                )
-
-            user.totp_enabled = True
-            await self.db.commit()
-
         roles = [self._role_to_str(role.name) for role in user.roles]
         token = create_access_token(str(user.id), {"roles": roles})
         return LoginResponse(access_token=token)

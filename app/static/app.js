@@ -979,23 +979,10 @@ function bindSidebarReveal() {
   const sidebar = appShell.querySelector(".sidebar");
   if (!sidebar || sidebar.dataset.revealBound === "true") return;
   sidebar.dataset.revealBound = "true";
-  let closeTimer;
-  const open = () => {
-    window.clearTimeout(closeTimer);
-    sidebar.classList.add("is-open");
-  };
-  const scheduleClose = () => {
-    window.clearTimeout(closeTimer);
-    closeTimer = window.setTimeout(() => {
-      if (!sidebar.matches(":hover") && !sidebar.contains(document.activeElement)) {
-        sidebar.classList.remove("is-open");
-      }
-    }, 3000);
-  };
-  sidebar.addEventListener("pointerenter", open);
-  sidebar.addEventListener("pointerleave", scheduleClose);
-  sidebar.addEventListener("focusin", open);
-  sidebar.addEventListener("focusout", scheduleClose);
+  sidebar.addEventListener("click", (event) => {
+    if (event.target.closest(".nav-item")) return;
+    sidebar.classList.toggle("is-open");
+  });
 }
 async function loadChatUsers() {
   try {
@@ -6865,6 +6852,11 @@ function bindInteractions() {
   pulseSuiteNav.querySelectorAll("[data-suite-view]").forEach((button) => {
     button.addEventListener("click", () => {
       const view = button.dataset.suiteView;
+      if (document.body.dataset.view === view) {
+        showView("dashboard", "dashboardSection");
+        setActiveSidebarLabel("Dashboard");
+        return;
+      }
       if (view === "chat") {
         showView("chat", "chatView");
       } else if (view === "activity") {
