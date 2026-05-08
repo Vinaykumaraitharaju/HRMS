@@ -15,6 +15,7 @@ from app.modules.auth.schemas import (
     ForgotPasswordRequest,
     LoginResponse,
     LoginRequest,
+    ProfileUpdateRequest,
     ResetPasswordRequest,
     UserCreate,
     UserRead,
@@ -170,10 +171,30 @@ async def me(
         "employee_id": user.employee_id,
         "employee_code": employee.employee_code if employee else None,
         "job_title": employee.job_title if employee else None,
+        "mobile": user.profile_mobile,
+        "profile_photo_data_url": user.profile_photo_data_url,
         "role": roles[0] if roles else "employee",
         "roles": roles,
         "totp_enabled": bool(user.totp_enabled),
         "password_change_required": bool(user.password_change_required),
+    }
+
+
+@router.put("/me/profile")
+async def update_my_profile(
+    payload: ProfileUpdateRequest,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    current_user.profile_mobile = (payload.mobile or "").strip() or None
+    current_user.profile_photo_data_url = payload.photo_data_url or None
+    await db.commit()
+    await db.refresh(current_user)
+
+    return {
+        "message": "Profile updated",
+        "mobile": current_user.profile_mobile,
+        "profile_photo_data_url": current_user.profile_photo_data_url,
     }
 
 

@@ -2985,14 +2985,23 @@ body[data-view="activity"] .activity-item::after {
 }
 
 body[data-view="profile"] .profile-grid {
-  grid-template-columns: 320px minmax(0, 620px);
+  grid-template-columns: 320px minmax(280px, 420px) minmax(280px, 420px);
   justify-content: center;
-  align-items: stretch;
+  align-items: start;
 }
 
 body[data-view="profile"] .profile-grid .glass-card:first-child {
   align-content: center;
   min-height: 360px;
+}
+
+body[data-view="profile"] .profile-note {
+  display: block;
+  max-width: 220px;
+  color: var(--muted);
+  font-weight: 800;
+  line-height: 1.4;
+  text-align: center;
 }
 
 body[data-view="admin"] .page-heading {
@@ -3628,9 +3637,14 @@ body[data-view="profile"] .page-heading h2 {
 
 body[data-view="timesheet"] .workspace-two-col,
 body[data-view="leave"] .workspace-two-col,
-body[data-view="calendar"] .workspace-two-col,
-body[data-view="profile"] .profile-grid {
+body[data-view="calendar"] .workspace-two-col {
   grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.65fr);
+  gap: 18px;
+  align-items: start;
+}
+
+body[data-view="profile"] .profile-grid {
+  grid-template-columns: 320px minmax(280px, 420px) minmax(280px, 420px);
   gap: 18px;
   align-items: start;
 }

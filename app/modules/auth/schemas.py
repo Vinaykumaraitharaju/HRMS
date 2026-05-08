@@ -38,6 +38,11 @@ class ResetPasswordRequest(BaseModel):
     new_password: str = Field(min_length=8)
 
 
+class ProfileUpdateRequest(BaseModel):
+    mobile: str | None = Field(default=None, max_length=40)
+    photo_data_url: str | None = None
+
+
 class UserCreate(BaseModel):
     email: EmailStr
     password: str = Field(min_length=8)

@@ -12,6 +12,7 @@ from sqlalchemy import (
     Integer,
     String,
     Table,
+    Text,
     func,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -55,6 +56,8 @@ class User(Base):
     totp_secret: Mapped[str] = mapped_column(String(64), nullable=True)
     totp_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
     password_change_required: Mapped[bool] = mapped_column(Boolean, default=False)
+    profile_mobile: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    profile_photo_data_url: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     employee_id: Mapped[int] = mapped_column(
         ForeignKey("employees.id", ondelete="SET NULL"),

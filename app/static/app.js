@@ -14,10 +14,13 @@
     ...(roleProfiles[currentRole] || roleProfiles.employee),
     name: user.name || user.full_name || user.email || "Employee",
     email: user.email || "",
-    title: (roleProfiles[currentRole] || roleProfiles.employee).title,
+    title: user.employee_code
+      ? `${(roleProfiles[currentRole] || roleProfiles.employee).title} - ${user.employee_code}`
+      : (roleProfiles[currentRole] || roleProfiles.employee).title,
   };
 
   applyRoleWorkspace();
+  hydrateProfileForm();
   restoreProfilePhoto();
   renderSidebar();
   enforcePasswordChangeIfRequired();
@@ -92,27 +95,27 @@ async function checkAuth() {
   }
 }
 const employeeNavSections = [
-  ["", [["Dashboard", "D"], ["Chat", "C", "8"], ["Timesheet", "S"], ["Leave", "L"]]],
+  ["", [["Dashboard", "D"], ["Chat", "C", "8"], ["Timesheet", "S"]]],
   ["Leave Management", [["Apply Leave", "+"]]],
   ["Requests", [["My Requests", "R"], ["Expense Claims", "$"]]],
   ["Others", [["Notifications", "N", "5"], ["Settings", "G"]]],
 ];
 
 const managerNavSections = [
-  ["", [["Dashboard", "D"], ["Chat", "C", "8"], ["Timesheet", "S"], ["Leave", "L"]]],
+  ["", [["Dashboard", "D"], ["Chat", "C", "8"], ["Timesheet", "S"]]],
   ["Leave Management", [["Apply Leave", "+"]]],
   ["Others", [["Notifications", "N", "5"], ["Settings", "G"]]],
 ];
 
 const hrNavSections = [
-  ["", [["Dashboard", "D"], ["Chat", "C", "8"], ["Timesheet", "S"], ["Leave", "L"]]],
+  ["", [["Dashboard", "D"], ["Chat", "C", "8"], ["Timesheet", "S"]]],
   ["People Ops", [["Employees", "E"], ["Roles & Access", "R"], ["Leave Policies", "L"]]],
   ["Leave Management", [["Apply Leave", "+"]]],
   ["Others", [["Notifications", "N", "5"], ["Settings", "G"]]],
 ];
 
 const adminNavSections = [
-  ["", [["Dashboard", "D"], ["Chat", "C", "8"], ["Timesheet", "S"], ["Leave", "L"]]],
+  ["", [["Dashboard", "D"], ["Chat", "C", "8"], ["Timesheet", "S"]]],
   ["People Ops", [["Employees", "E"], ["Roles & Access", "R"], ["Leave Policies", "L"]]],
   ["Leave Management", [["Apply Leave", "+"]]],
   ["Attendance & Time", [["Timesheet Control", "T"], ["Audit Logs", "G"]]],
@@ -347,12 +350,15 @@ const profileHeaderAvatar = document.querySelector(".profile-button .avatar");
 const profilePhotoInput = document.querySelector("#profilePhotoInput");
 const profilePhotoPreview = document.querySelector("#profilePhotoPreview");
 const profilePhotoUpload = document.querySelector("#profilePhotoUpload");
+const profileEmployeeIdInput = document.querySelector("#profileEmployeeIdInput");
+const profileEmailInput = document.querySelector("#profileEmailInput");
 const profileMobileInput = document.querySelector("#profileMobileInput");
 const currentPasswordInput = document.querySelector("#currentPasswordInput");
 const newPasswordInput = document.querySelector("#newPasswordInput");
 const confirmPasswordInput = document.querySelector("#confirmPasswordInput");
 const passwordChangeRequiredNotice = document.querySelector("#passwordChangeRequiredNotice");
 const saveProfileButton = document.querySelector("#saveProfileButton");
+const savePasswordButton = document.querySelector("#savePasswordButton");
 const themeToggle = document.querySelector("#themeToggle");
 const employeeAdminPanel = document.querySelector("#employeeAdminPanel");
 const employeeAdminForm = document.querySelector("#employeeAdminForm");
@@ -1606,16 +1612,61 @@ function enforcePasswordChangeIfRequired() {
   currentPasswordInput?.focus();
 }
 
-async function saveProfileChanges() {
+function currentProfilePhotoDataUrl() {
+  return profilePhotoPreview?.dataset.photoSrc || window.currentUser?.profile_photo_data_url || "";
+}
+
+function currentEmployeeDisplayId() {
+  return window.currentUser?.employee_code || window.currentUser?.employee_id || "Not linked";
+}
+
+function hydrateProfileForm() {
+  if (profileEmployeeIdInput) profileEmployeeIdInput.value = currentEmployeeDisplayId();
+  if (profileEmailInput) profileEmailInput.value = window.currentUser?.email || "";
+  if (profileMobileInput) profileMobileInput.value = window.currentUser?.mobile || "";
+}
+
+async function saveProfileDetails() {
   const mobile = profileMobileInput.value.trim() || "";
+
+  if (saveProfileButton) {
+    saveProfileButton.disabled = true;
+    saveProfileButton.textContent = "Saving...";
+  }
+
+  try {
+    const updated = await fetchJson("/api/v1/auth/me/profile", {
+      method: "PUT",
+      body: JSON.stringify({
+        mobile,
+        photo_data_url: currentProfilePhotoDataUrl(),
+      }),
+    });
+
+    window.currentUser.mobile = updated.mobile || "";
+    window.currentUser.profile_photo_data_url = updated.profile_photo_data_url || "";
+    hydrateProfileForm();
+    restoreProfilePhoto();
+    showToast("Profile details saved.");
+  } catch (err) {
+    showToast(err.message || "Profile details could not be saved.");
+  } finally {
+    if (saveProfileButton) {
+      saveProfileButton.disabled = false;
+      saveProfileButton.textContent = "Save profile details";
+    }
+  }
+}
+
+async function savePasswordChanges() {
   const currentPassword = currentPasswordInput.value || "";
   const newPassword = newPasswordInput.value || "";
   const confirmPassword = confirmPasswordInput.value || "";
   const passwordRequired = Boolean(window.currentUser?.password_change_required);
 
-  if (!mobile && !passwordRequired) {
-    showToast("Mobile number is required.");
-    profileMobileInput.focus();
+  if (!passwordRequired && !currentPassword && !newPassword && !confirmPassword) {
+    showToast("Enter your current and new password to change it.");
+    currentPasswordInput.focus();
     return;
   }
 
@@ -1637,9 +1688,9 @@ async function saveProfileChanges() {
     }
 
     try {
-      if (saveProfileButton) {
-        saveProfileButton.disabled = true;
-        saveProfileButton.textContent = "Saving...";
+      if (savePasswordButton) {
+        savePasswordButton.disabled = true;
+        savePasswordButton.textContent = "Updating...";
       }
 
       await fetchJson("/api/v1/auth/change-password", {
@@ -1661,13 +1712,12 @@ async function saveProfileChanges() {
       showToast(err.message || "Password update failed.");
       return;
     } finally {
-      if (saveProfileButton) {
-        saveProfileButton.disabled = false;
-        saveProfileButton.textContent = "Save profile";
+      if (savePasswordButton) {
+        savePasswordButton.disabled = false;
+        savePasswordButton.textContent = "Change password";
       }
     }
   }
-  showToast("Profile details saved.");
 }
 
 function updateProfilePhotoPreview(file) {
@@ -1681,7 +1731,7 @@ function updateProfilePhotoPreview(file) {
       showToast("Photo preview updated, but browser storage is full.");
       return;
     }
-    showToast("Profile photo updated.");
+    saveProfileDetails();
   });
   reader.readAsDataURL(file);
 }
@@ -1716,11 +1766,12 @@ function applyProfilePhoto(src) {
 }
 
 function restoreProfilePhoto() {
+  const savedProfilePhoto = window.currentUser?.profile_photo_data_url || "";
   try {
-    applyProfilePhoto(localStorage.getItem(profilePhotoStorageKey()));
+    applyProfilePhoto(savedProfilePhoto || localStorage.getItem(profilePhotoStorageKey()));
   } catch {
     // Browser storage may be unavailable in restricted modes.
-    applyProfilePhoto("");
+    applyProfilePhoto(savedProfilePhoto);
   }
 }
 
@@ -4874,7 +4925,7 @@ function mapLeaveStateRequests(state) {
 
     return {
       id: item?.id,
-      leaveId: item?.leave_id || `LV-${item?.id || ""}`,
+      leaveId: item?.leave_id || formatLeaveRequestId(item),
       type: item?.leave_type || "Leave",
       start: item?.start_date || "",
       end: item?.end_date || "",
@@ -4884,6 +4935,13 @@ function mapLeaveStateRequests(state) {
       stage: item?.stage || String(item?.status || ""),
     };
   });
+}
+
+function formatLeaveRequestId(item = {}) {
+  const rawId = Number(item?.id || 0);
+  const requestYear = safeText(item?.start_date || item?.created_at || new Date().toISOString()).slice(0, 4);
+  const paddedId = rawId > 0 ? String(rawId).padStart(5, "0") : "00000";
+  return `WVL-LV-${requestYear}-${paddedId}`;
 }
 
 function renderLeaveWorkspace() {
@@ -6583,7 +6641,8 @@ function bindInteractions() {
   profilePhotoPreview?.addEventListener("click", openProfilePhotoPreview);
   threadAvatar?.addEventListener("click", () => openConversationAvatarPreview());
   detailAvatar?.addEventListener("click", () => openConversationAvatarPreview());
-  saveProfileButton?.addEventListener("click", saveProfileChanges);
+  saveProfileButton?.addEventListener("click", saveProfileDetails);
+  savePasswordButton?.addEventListener("click", savePasswordChanges);
 
   themeToggle?.addEventListener("click", () => {
     document.body.classList.toggle("dark-mode");
