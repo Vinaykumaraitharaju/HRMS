@@ -340,13 +340,29 @@
       }
     }
 
-    async function postJson(url, payload) {
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(payload),
-      });
+    async function postJson(url, payload, timeoutMs = 25000) {
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+
+      let res;
+
+      try {
+        res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(payload),
+          signal: controller.signal,
+        });
+      } catch (err) {
+        if (err.name === "AbortError") {
+          throw new Error("Request timed out. Check Render logs for the email provider error.");
+        }
+
+        throw err;
+      } finally {
+        window.clearTimeout(timeoutId);
+      }
 
       const contentType = res.headers.get("content-type") || "";
       const data = contentType.includes("application/json")

@@ -7,6 +7,7 @@ import random
 import smtplib
 from datetime import UTC, datetime, timedelta
 from email.message import EmailMessage
+from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 from fastapi import HTTPException, status
@@ -17,6 +18,8 @@ from app.core.security import create_access_token, hash_password, verify_passwor
 from app.modules.auth.models import PasswordResetOTP, Role, RoleModel, User
 from app.modules.auth.schemas import Token, UserCreate
 from app.modules.employees.models import Employee
+
+EMAIL_TIMEOUT_SECONDS = 15
 
 
 class AuthService:
@@ -46,9 +49,12 @@ class AuthService:
         user = await self._find_user_by_login(login)
 
         if not user or not user.is_active:
+            print(f"Password reset OTP requested for unknown/inactive login: {login}")
             return {
                 "message": "If the account exists, an OTP has been sent to the registered email."
             }
+
+        print(f"Password reset OTP requested for user_id={user.id} email={user.email}")
 
         otp = f"{random.SystemRandom().randint(100000, 999999)}"
         otp_hash = self._otp_hash(user.id, otp)
@@ -74,7 +80,16 @@ class AuthService:
 
         await self.db.commit()
 
-        await self._send_otp_email(user.email, otp)
+        try:
+            await self._send_otp_email(user.email, otp)
+        except HTTPException as exc:
+            print(
+                f"Password reset OTP email failed for user_id={user.id} "
+                f"email={user.email}: {exc.detail}"
+            )
+            raise
+
+        print(f"Password reset OTP email sent for user_id={user.id} email={user.email}")
 
         return {
             "message": "If the account exists, an OTP has been sent to the registered email."
@@ -126,6 +141,7 @@ class AuthService:
         resend_api_key = os.getenv("RESEND_API_KEY", "").strip()
         resend_from = os.getenv("RESEND_FROM_EMAIL", "").strip() or os.getenv("FROM_EMAIL", "").strip()
         if resend_api_key and resend_from:
+            print(f"Sending password reset OTP through Resend to {to_email}")
             await self._send_otp_email_via_resend(
                 to_email=to_email,
                 otp=otp,
@@ -168,8 +184,18 @@ class AuthService:
         """
 
         if not smtp_host or not smtp_user or not smtp_password:
-            print(f"[DEV OTP] {otp}")
-            return
+            if os.getenv("ALLOW_DEV_OTP", "").strip().lower() in {"1", "true", "yes"}:
+                print(f"[DEV OTP] {otp}")
+                return
+
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=(
+                    "Email provider is not configured. Set RESEND_API_KEY and "
+                    "RESEND_FROM_EMAIL on Render, or configure SMTP_HOST, "
+                    "SMTP_USERNAME, SMTP_PASSWORD, and FROM_EMAIL."
+                ),
+            )
 
         msg = EmailMessage()
         msg["From"] = smtp_from
@@ -179,7 +205,8 @@ class AuthService:
         msg.add_alternative(html_body, subtype="html")
 
         try:
-            with smtplib.SMTP(smtp_host, smtp_port) as smtp:
+            print(f"Sending password reset OTP through SMTP host={smtp_host} to {to_email}")
+            with smtplib.SMTP(smtp_host, smtp_port, timeout=EMAIL_TIMEOUT_SECONDS) as smtp:
                 smtp.starttls()
                 smtp.login(smtp_user, smtp_password)
                 smtp.send_message(msg)
@@ -229,13 +256,19 @@ class AuthService:
             method="POST",
         )
         try:
-            with urlopen(req, timeout=20) as resp:
+            with urlopen(req, timeout=EMAIL_TIMEOUT_SECONDS) as resp:
                 if resp.status >= 400:
                     body = resp.read().decode("utf-8", errors="ignore")
                     raise HTTPException(
                         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                         detail=f"Resend send failed: {resp.status} {body}",
                     )
+        except HTTPError as exc:
+            body = exc.read().decode("utf-8", errors="ignore")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Resend send failed: {exc.code} {body}",
+            )
         except HTTPException:
             raise
         except Exception as exc:
