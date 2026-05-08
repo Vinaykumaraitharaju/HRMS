@@ -6219,6 +6219,52 @@ body[data-view="chat"] #sendChat {
   min-width: 84px !important;
 }
 
+/* Final chat composer guard: keep the typing box visible beside the send actions. */
+body[data-view="chat"] .chat-input {
+  position: relative !important;
+  bottom: auto !important;
+  transform: none !important;
+  display: grid !important;
+  grid-template-columns: minmax(240px, 1fr) max-content !important;
+  align-items: center !important;
+  gap: 12px !important;
+  flex: 0 0 76px !important;
+  min-height: 76px !important;
+  max-height: 86px !important;
+  padding: 10px 12px !important;
+  margin: 0 !important;
+  overflow: visible !important;
+  background: rgba(5, 8, 8, 0.36) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 18px 18px 24px 24px !important;
+  box-shadow: 0 -10px 26px rgba(0, 0, 0, 0.18) !important;
+}
+
+body[data-view="chat"] .chat-input textarea#chatMessage {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  grid-column: 1 !important;
+  width: 100% !important;
+  height: 52px !important;
+  min-height: 52px !important;
+  max-height: 52px !important;
+  padding: 14px 16px !important;
+  margin: 0 !important;
+  resize: none !important;
+  color: var(--text) !important;
+  background: rgba(10, 12, 12, 0.72) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  border-radius: 18px !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+body[data-view="chat"] .composer-tools {
+  grid-column: 2 !important;
+  justify-self: end !important;
+  align-self: center !important;
+}
+
 /* Keep Pulse suite pages clear of the fixed mini rail after later page padding rules. */
 @media (min-width: 901px) {
   body[data-view="activity"] #activityView,
