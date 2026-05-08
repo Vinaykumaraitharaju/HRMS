@@ -196,18 +196,23 @@ def create_app() -> FastAPI:
         admin_password = (settings.admin_password or "").strip()
         if admin_email and admin_password:
             async with AsyncSessionLocal() as session:
+                role_result = await session.execute(
+                    select(RoleModel).where(RoleModel.name == Role.admin)
+                )
+                admin_role = role_result.scalar_one_or_none()
+                if not admin_role:
+                    admin_role = RoleModel(name=Role.admin)
+                    session.add(admin_role)
+                    await session.flush()
+
                 result = await session.execute(select(User).where(User.email == admin_email))
                 existing_user = result.scalar_one_or_none()
-                if not existing_user:
-                    role_result = await session.execute(
-                        select(RoleModel).where(RoleModel.name == Role.admin)
-                    )
-                    admin_role = role_result.scalar_one_or_none()
-                    if not admin_role:
-                        admin_role = RoleModel(name=Role.admin)
-                        session.add(admin_role)
-                        await session.flush()
-
+                if existing_user:
+                    existing_user.password_hash = hash_password(admin_password)
+                    existing_user.is_active = True
+                    existing_user.roles = [admin_role]
+                    action = "updated"
+                else:
                     user = User(
                         email=admin_email,
                         password_hash=hash_password(admin_password),
@@ -216,7 +221,12 @@ def create_app() -> FastAPI:
                         is_active=True,
                     )
                     session.add(user)
-                    await session.commit()
+                    action = "created"
+
+                await session.commit()
+                print(f"Startup admin {action}: {admin_email}")
+        else:
+            print("Startup admin not configured: set ADMIN_EMAIL and ADMIN_PASSWORD on Render.")
 
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
