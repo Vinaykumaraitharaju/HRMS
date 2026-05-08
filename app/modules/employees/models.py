@@ -23,7 +23,7 @@ class Employee(Base):
     job_title: Mapped[str] = mapped_column(String(120))
     date_joined: Mapped[date] = mapped_column(Date)
     department_id: Mapped[int] = mapped_column(ForeignKey("departments.id"))
-    reports_to_id: Mapped[int] = mapped_column(ForeignKey("employees.id"))
+    reports_to_id: Mapped[int] = mapped_column(ForeignKey("employees.id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     department: Mapped[Department] = relationship(lazy="selectin")

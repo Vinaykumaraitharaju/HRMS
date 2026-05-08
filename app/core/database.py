@@ -13,6 +13,12 @@ class Base(DeclarativeBase):
 
 
 def _resolve_database_url(raw_url: str) -> str:
+    if raw_url.startswith("postgres://"):
+        return raw_url.replace("postgres://", "postgresql+asyncpg://", 1)
+
+    if raw_url.startswith("postgresql://") and "+asyncpg" not in raw_url:
+        return raw_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+
     # On Render, ensure relative SQLite files are stored on persistent disk.
     if not raw_url.startswith("sqlite+aiosqlite:///./"):
         return raw_url
