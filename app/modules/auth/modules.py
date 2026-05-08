@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import enum
 from datetime import datetime
-from typing import Optional
 
 from sqlalchemy import (
     Boolean,
@@ -57,8 +56,8 @@ class User(Base):
     totp_secret: Mapped[str] = mapped_column(String(64), nullable=True)
     totp_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
     password_change_required: Mapped[bool] = mapped_column(Boolean, default=False)
-    profile_mobile: Mapped[Optional[str]] = mapped_column(String(40), nullable=True)
-    profile_photo_data_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    profile_mobile: Mapped[str] = mapped_column(String(40), nullable=True)
+    profile_photo_data_url: Mapped[str] = mapped_column(Text, nullable=True)
 
     employee_id: Mapped[int] = mapped_column(
         ForeignKey("employees.id", ondelete="SET NULL"),
