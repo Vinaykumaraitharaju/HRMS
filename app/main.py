@@ -172,6 +172,32 @@ async def _migrate_nullable_workflow_columns() -> None:
         # production uses Postgres and SQLite ALTER COLUMN is not supported.
 
 
+async def _migrate_leave_type_column() -> None:
+    async with engine.begin() as conn:
+        if conn.dialect.name == "postgresql":
+            await conn.execute(
+                text(
+                    "ALTER TABLE IF EXISTS leave_requests "
+                    "ADD COLUMN IF NOT EXISTS leave_type VARCHAR(120) NOT NULL DEFAULT 'Leave'"
+                )
+            )
+            return
+
+        if conn.dialect.name == "sqlite":
+            table_check = await conn.execute(
+                text("SELECT name FROM sqlite_master WHERE type='table' AND name='leave_requests'")
+            )
+            if table_check.first() is None:
+                return
+
+            pragma_rows = await conn.execute(text("PRAGMA table_info(leave_requests)"))
+            columns = {row[1] for row in pragma_rows.fetchall()}
+            if "leave_type" not in columns:
+                await conn.execute(
+                    text("ALTER TABLE leave_requests ADD COLUMN leave_type VARCHAR(120) NOT NULL DEFAULT 'Leave'")
+                )
+
+
 def create_app() -> FastAPI:
     app = FastAPI(title=settings.app_name, version="0.1.0")
     static_dir = Path(__file__).resolve().parent / "static"
@@ -253,6 +279,7 @@ def create_app() -> FastAPI:
                 pass
 
         await _migrate_nullable_workflow_columns()
+        await _migrate_leave_type_column()
 
         admin_email = (settings.admin_email or "").strip().lower()
         admin_password = (settings.admin_password or "").strip()

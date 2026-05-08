@@ -505,6 +505,7 @@ const calendarTitle = document.querySelector("#calendarTitle");
 const calendarType = document.querySelector("#calendarType");
 const calendarLocation = document.querySelector("#calendarLocation");
 const calendarVisibility = document.querySelector("#calendarVisibility");
+const calendarAttendees = document.querySelector("#calendarAttendees");
 const calendarStart = document.querySelector("#calendarStart");
 const calendarEnd = document.querySelector("#calendarEnd");
 const calendarDescription = document.querySelector("#calendarDescription");
@@ -1273,6 +1274,24 @@ function updateNotificationBadge() {
   notificationBadge.classList.toggle("hidden", unreadNotificationCount <= 0);
 }
 
+function notificationDisplayCopy(item = {}) {
+  const rawTitle = String(item.title || item.subject || item.type || "Notification");
+  const rawBody = String(item.body || item.message || "No details available.");
+  const type = String(item.type || item.category || "").toLowerCase();
+
+  if (type === "attendance" && rawTitle.toLowerCase() === "attendance captured") {
+    return {
+      title: "Attendance recorded",
+      body: rawBody.replace(/attendance has been recorded/i, "attendance is recorded"),
+    };
+  }
+
+  return {
+    title: rawTitle,
+    body: rawBody,
+  };
+}
+
 function renderNotificationDropdown() {
   const list = document.querySelector("#notificationMenuList");
   if (!list) return;
@@ -1295,13 +1314,14 @@ function renderNotificationDropdown() {
     .map((item) => {
       const priority = item.priority || "info";
       const unreadClass = item.read_at ? "read" : "unread";
+      const copy = notificationDisplayCopy(item);
 
       return `
         <button class="notification-menu-item ${priority} ${unreadClass}" type="button" data-notification-id="${item.id}">
           <span class="notification-dot"></span>
           <span>
-            <strong>${escapeHtml(item.title || "Notification")}</strong>
-            <small>${escapeHtml(item.body || "No details available.")}</small>
+            <strong>${escapeHtml(copy.title)}</strong>
+            <small>${escapeHtml(copy.body)}</small>
             <em>${formatNotificationDate(item.created_at)}</em>
           </span>
         </button>
@@ -1351,10 +1371,11 @@ function showNotificationToast(item) {
   const toastEl = document.createElement("button");
   toastEl.type = "button";
   toastEl.className = `global-notification-toast ${item.priority || "info"}`;
+  const copy = notificationDisplayCopy(item);
 
   toastEl.innerHTML = `
-    <strong>${escapeHtml(item.title || "Notification")}</strong>
-    <span>${escapeHtml(item.body || "No details available.")}</span>
+    <strong>${escapeHtml(copy.title)}</strong>
+    <span>${escapeHtml(copy.body)}</span>
   `;
 
   toastEl.addEventListener("click", async () => {
@@ -4166,15 +4187,16 @@ function renderLeave() {
   ].filter(Boolean);
 
   /* ===== LEGEND (TOP CARDS) ===== */
+  const balanceRows = leaveBalanceRows();
   leaveLegend.innerHTML = activeTypes.length
     ? `
       <div class="leave-hub-legend-grid">
-        ${activeTypes
+        ${balanceRows
       .slice(0, 3)
       .map((item, index) => {
         const tones = ["approved", "pending", "rejected"];
-        const name = item?.name || item?.leave_type || "Leave";
-        const balance = Number(item?.balance || item?.remaining || 0);
+        const name = item?.label || "Leave";
+        const balance = Number(item?.remaining || 0);
 
         return `
               <div class="leave-hub-legend-card">
@@ -4298,20 +4320,14 @@ function renderAnnouncements() {
 
   announcementsPanel.innerHTML = dashboardNotifications
     .map((item) => {
-      const title = item.title || item.subject || item.type || "Notification";
-      const body =
-        item.body ||
-        item.message ||
-        item.description ||
-        item.content ||
-        "No details available.";
+      const copy = notificationDisplayCopy(item);
 
       return `
         <button class="announcement ${item.read_at ? "" : "warning"} ${item.type || ""}"
                 type="button"
                 data-dashboard-notification-id="${item.id || ""}">
-          <strong>${escapeHtml(title)}</strong>
-          <p>${escapeHtml(body)}</p>
+          <strong>${escapeHtml(copy.title)}</strong>
+          <p>${escapeHtml(copy.body)}</p>
           <small>${formatNotificationDate(item.created_at)}</small>
         </button>
       `;
@@ -4761,6 +4777,50 @@ function canRevokeLeave(request) {
   return safeStatus(request?.status) !== "Revoked" && !safeStatus(request?.status).startsWith("Revoke Pending");
 }
 
+function leaveStatusConsumesBalance(status = "") {
+  const clean = safeStatus(status).toLowerCase();
+  return (
+    clean.startsWith("pending") ||
+    clean === "approved" ||
+    clean.startsWith("revoke pending")
+  );
+}
+
+function leaveUsageByType() {
+  const usage = new Map();
+  (leaveTrackerRequests || [])
+    .filter((request) => leaveStatusConsumesBalance(request?.status))
+    .forEach((request) => {
+      const type = normalizeLeaveTypeKey(request?.type || "Leave");
+      usage.set(type, (usage.get(type) || 0) + Number(request?.days || 0));
+    });
+  return usage;
+}
+
+function normalizeLeaveTypeKey(value = "") {
+  return safeText(value, "Leave")
+    .replace(/\s+Leave$/i, "")
+    .trim()
+    .toLowerCase();
+}
+
+function leaveBalanceRows() {
+  const usage = leaveUsageByType();
+  return activeLeaveTypes().map((type) => {
+    const allocated = Number(type.balance || 0);
+    const typeKey = normalizeLeaveTypeKey(type.name);
+    const used = usage.get(typeKey) || 0;
+    return {
+      label: type.name.replace(/\s+Leave$/i, ""),
+      name: type.name,
+      key: typeKey,
+      allocated,
+      used,
+      remaining: Math.max(0, allocated - used),
+    };
+  });
+}
+
 function revokeLeaveRequest(requestId) {
   const request = leaveTrackerRequests.find((item) => String(item.id) === String(requestId));
   if (!request) {
@@ -4773,8 +4833,8 @@ function revokeLeaveRequest(requestId) {
   }
   showToast("Processing revoke request...");
   fetchJson(`/api/v1/leaves/request/${requestId}`, { method: "DELETE" })
-    .then((state) => {
-      leaveTrackerRequests = mapLeaveStateRequests(state);
+    .then(() => loadLeaveState())
+    .then(() => {
       renderLeave();
       renderLeaveWorkspace();
       const updated = leaveTrackerRequests.find((item) => String(item.id) === String(requestId));
@@ -4829,7 +4889,9 @@ function mapLeaveStateRequests(state) {
 function renderLeaveWorkspace() {
   if (!leaveRequestList || !leaveBalanceGrid) return;
   renderLeaveTypeOptions();
-  const pendingCount = (leaveTrackerRequests || []).filter((item) => safeStatus(item?.status).startsWith("Pending") || safeStatus(item?.status).startsWith("Revoke Pending")).length;
+  const pendingRequests = (leaveTrackerRequests || []).filter((item) => safeStatus(item?.status).startsWith("Pending") || safeStatus(item?.status).startsWith("Revoke Pending"));
+  const pendingCount = pendingRequests.length;
+  const pendingDays = pendingRequests.reduce((sum, item) => sum + Number(item?.days || 0), 0);
   leavePendingChip.textContent = `${pendingCount} pending`;
   const selectedStart = leaveStartInput.value;
   const selectedEnd = leaveEndInput.value;
@@ -4846,8 +4908,12 @@ function renderLeaveWorkspace() {
       </div>`;
   }
   leaveBalanceGrid.innerHTML = [
-    ...activeLeaveTypes().map((type) => [type.name.replace(/\s+Leave$/i, ""), Number(type.balance || 0), "days available"]),
-    ["Pending", pendingCount, "days in approval"],
+    ...leaveBalanceRows().map((type) => [
+      type.label,
+      type.remaining,
+      `${type.used}/${type.allocated} days used`,
+    ]),
+    ["Pending", pendingDays, "days in approval"],
   ].map(([label, value, note]) => `
     <div class="leave-balance-item">
       <small>${label}</small>
@@ -4955,6 +5021,14 @@ function submitLeaveApplication() {
 
   if (leaveEndInput.value < leaveStartInput.value) {
     showToast("End date should be after start date.");
+    return;
+  }
+
+  const selectedDays = leaveDaysInclusive(leaveStartInput.value, leaveEndInput.value);
+  const selectedLeaveTypeKey = normalizeLeaveTypeKey(leaveTypeInput.value);
+  const selectedBalance = leaveBalanceRows().find((item) => item.key === selectedLeaveTypeKey);
+  if (selectedBalance && selectedDays > selectedBalance.remaining) {
+    showToast(`${leaveTypeInput.value} has only ${selectedBalance.remaining} day(s) available.`);
     return;
   }
 
@@ -5192,16 +5266,20 @@ function filteredActivityItems() {
 function renderActivityFeed() {
   const items = filteredActivityItems();
   activityList.innerHTML = items.length
-    ? items.map((item) => `
-      <button class="activity-item ${item.unread ? "unread" : ""}" type="button" data-activity-id="${item.id}" data-activity-target="${item.target || ""}">
-        <span class="activity-pill ${item.category}">${item.category}</span>
-        <strong>${item.title}</strong>
-        <p>${item.body}</p>
-        <div>
-          <small>${item.actor}</small>
-          <time>${new Date(item.created_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</time>
-        </div>
-      </button>`).join("")
+    ? items.map((item) => {
+      const copy = notificationDisplayCopy(item);
+
+      return `
+        <button class="activity-item ${item.unread ? "unread" : ""}" type="button" data-activity-id="${item.id}" data-activity-target="${item.target || ""}">
+          <span class="activity-pill ${item.category}">${item.category}</span>
+          <strong>${escapeHtml(copy.title)}</strong>
+          <p>${escapeHtml(copy.body)}</p>
+          <div>
+            <small>${escapeHtml(item.actor || "Activity")}</small>
+            <time>${new Date(item.created_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</time>
+          </div>
+        </button>`;
+    }).join("")
     : `<div class="empty-state">No activity items match this filter.</div>`;
 
   activityList.querySelectorAll("[data-activity-id]").forEach((button) => {
@@ -5240,8 +5318,53 @@ function toLocalInputValue(date) {
 
 function calendarEventsForDate(dateText) {
   return calendarEvents
-    .filter((event) => event.start_at.slice(0, 10) === dateText)
+    .filter((event) => localDateKey(new Date(event.start_at)) === dateText)
     .sort((a, b) => a.start_at.localeCompare(b.start_at));
+}
+
+function calendarParticipantUsers() {
+  const currentId = Number(window.currentUser?.id);
+  return (chatUsers || [])
+    .filter((user) => Number(user.id) !== currentId)
+    .sort((a, b) => displayUserName(a).localeCompare(displayUserName(b)));
+}
+
+function renderCalendarAttendeePicker(selectedUserIds = []) {
+  if (!calendarAttendees) return;
+  const selected = new Set((selectedUserIds || []).map((id) => String(id)));
+  const users = calendarParticipantUsers();
+
+  if (!users.length) {
+    calendarAttendees.innerHTML = "<small>No other active users found.</small>";
+    return;
+  }
+
+  calendarAttendees.innerHTML = `
+    <small>Choose who should see this meeting.</small>
+    <div class="participant-list">
+      ${users.map((user) => {
+        const userId = String(user.id);
+        const name = displayUserName(user);
+        const detail = user.employee_code || user.email || user.job_title || "User";
+
+        return `
+          <label class="participant-option">
+            <input type="checkbox" value="${userId}" ${selected.has(userId) ? "checked" : ""} />
+            <span>
+              <strong>${escapeHtml(name)}</strong>
+              <small>${escapeHtml(detail)}</small>
+            </span>
+          </label>`;
+      }).join("")}
+    </div>
+  `;
+}
+
+function selectedCalendarAttendeeIds() {
+  if (!calendarAttendees) return [];
+  return [...calendarAttendees.querySelectorAll('input[type="checkbox"]:checked')]
+    .map((input) => Number(input.value))
+    .filter(Boolean);
 }
 
 function calendarMeetingLink(event = {}) {
@@ -5278,6 +5401,20 @@ function joinMeeting(link) {
   }
 
   window.open(cleanLink, "_blank", "noopener,noreferrer");
+}
+
+function eventParticipantLabel(event = {}) {
+  const attendeeIds = Array.isArray(event.attendee_user_ids) ? event.attendee_user_ids : [];
+  if (!attendeeIds.length) return "Only you";
+  const names = attendeeIds
+    .map((userId) => findChatUser(userId))
+    .filter(Boolean)
+    .map(displayUserName)
+    .filter(Boolean);
+
+  if (!names.length) return `${attendeeIds.length} participant${attendeeIds.length === 1 ? "" : "s"}`;
+  if (names.length <= 2) return names.join(", ");
+  return `${names.slice(0, 2).join(", ")} +${names.length - 2}`;
 }
 
 function calendarMeetingLink(event = {}) {
@@ -5358,6 +5495,7 @@ function renderCalendar() {
         minute: "2-digit",
       })}</span>
           <small>${event.description || event.location || "Meeting"}</small>
+          <small>Participants: ${escapeHtml(eventParticipantLabel(event))}</small>
         </div>
 
         <div class="meeting-actions">
@@ -5443,6 +5581,7 @@ function renderMeetingList() {
                 <div>
                   <strong>${event.title}</strong>
                   <span>${event.description || event.location || event.event_type || "Calendar event"}</span>
+                  <small>Participants: ${escapeHtml(eventParticipantLabel(event))}</small>
 
                   <div class="meeting-actions">
                     ${link
@@ -5490,8 +5629,11 @@ function renderMeetingList() {
   });
 }
 
-function openCalendarModal() {
+async function openCalendarModal() {
   const baseDate = selectedCalendarDate || localDateKey(new Date());
+  if (!chatUsers.length) {
+    await loadChatUsers();
+  }
   calendarTitle.value = "";
   calendarType.value = "meeting";
   calendarLocation.value = "";
@@ -5499,6 +5641,7 @@ function openCalendarModal() {
   calendarDescription.value = "";
   calendarStart.value = `${baseDate}T09:00`;
   calendarEnd.value = `${baseDate}T09:30`;
+  renderCalendarAttendeePicker();
   calendarModal.classList.remove("hidden");
 }
 
@@ -5522,6 +5665,7 @@ async function saveCalendarReminder() {
         end_at: new Date(calendarEnd.value).toISOString(),
         event_type: calendarType.value,
         visibility: calendarVisibility.value,
+        attendee_user_ids: selectedCalendarAttendeeIds(),
         all_day: false,
       }),
     });
@@ -6529,6 +6673,7 @@ function bindInteractions() {
       meeting_link: calendarLocation.value.trim().startsWith("http")
         ? calendarLocation.value.trim()
         : "",
+      attendee_user_ids: selectedCalendarAttendeeIds(),
     };
 
     try {

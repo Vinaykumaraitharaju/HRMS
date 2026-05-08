@@ -6,6 +6,7 @@ from app.modules.leave.models import LeaveStatus
 
 
 class LeaveApply(BaseModel):
+    leave_type: str
     start_date: date
     end_date: date
     reason: str
@@ -24,6 +25,7 @@ class LeaveDecision(BaseModel):
 class LeaveRead(BaseModel):
     id: int
     employee_id: int
+    leave_type: str
     start_date: date
     end_date: date
     reason: str

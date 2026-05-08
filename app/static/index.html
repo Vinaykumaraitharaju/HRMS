@@ -642,8 +642,12 @@
       <label>Visibility<select id="calendarVisibility">
           <option value="personal">Personal</option>
           <option value="team">Team</option>
-          <option value="company">Company</option>
         </select></label>
+      <label>Participants
+        <div id="calendarAttendees" class="participant-picker">
+          <small>Choose users for this meeting. If nobody is selected, it stays personal.</small>
+        </div>
+      </label>
       <label>Start<input id="calendarStart" type="datetime-local" /></label>
       <label>End<input id="calendarEnd" type="datetime-local" /></label>
       <label>Description<textarea id="calendarDescription"></textarea></label>

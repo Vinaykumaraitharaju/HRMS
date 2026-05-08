@@ -32,6 +32,7 @@ class LeaveRequest(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     employee_id: Mapped[int] = mapped_column(ForeignKey("employees.id"), index=True)
+    leave_type: Mapped[str] = mapped_column(String(120), nullable=False, default="Leave")
     start_date: Mapped[date] = mapped_column(Date)
     end_date: Mapped[date] = mapped_column(Date)
     reason: Mapped[str] = mapped_column(Text)

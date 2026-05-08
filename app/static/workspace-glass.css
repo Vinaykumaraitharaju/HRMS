@@ -6204,3 +6204,59 @@ body[data-view="chat"] .composer-tools button {
 body[data-view="chat"] #sendChat {
   min-width: 84px !important;
 }
+
+/* Keep Pulse suite pages clear of the fixed mini rail after later page padding rules. */
+@media (min-width: 901px) {
+  body[data-view="activity"] #activityView,
+  body[data-view="calendar"] #calendarView {
+    padding-left: 132px !important;
+  }
+}
+
+.participant-picker {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.participant-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 8px;
+  max-height: 180px;
+  overflow: auto;
+}
+
+.participant-option {
+  display: grid !important;
+  grid-template-columns: 18px minmax(0, 1fr);
+  align-items: center;
+  gap: 9px !important;
+  margin: 0 !important;
+  padding: 10px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.participant-option input {
+  width: 16px !important;
+  height: 16px !important;
+  min-height: 16px !important;
+}
+
+.participant-option span {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.participant-option strong,
+.participant-option small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

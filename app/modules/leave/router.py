@@ -38,9 +38,9 @@ async def _safe_notify(
 
     try:
         payload = NotificationCreate(
-            user_id=user_id,
+            recipient_user_id=user_id,
             title=title,
-            message=message,
+            body=message,
             type=notification_type,
         )
         await NotificationService(db).create(payload)

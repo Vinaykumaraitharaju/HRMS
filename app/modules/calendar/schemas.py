@@ -14,6 +14,8 @@ class CalendarEventCreate(BaseModel):
     all_day: bool = False
     event_type: CalendarEventType = CalendarEventType.meeting
     visibility: CalendarVisibility = CalendarVisibility.personal
+    meeting_link: str | None = None
+    attendee_user_ids: list[int] = []
 
     @model_validator(mode="after")
     def validate_range(self):
@@ -31,6 +33,8 @@ class CalendarEventUpdate(BaseModel):
     all_day: bool | None = None
     event_type: CalendarEventType | None = None
     visibility: CalendarVisibility | None = None
+    meeting_link: str | None = None
+    attendee_user_ids: list[int] | None = None
 
     @model_validator(mode="after")
     def validate_range(self):
@@ -53,5 +57,7 @@ class CalendarEventRead(BaseModel):
     source: CalendarSource
     created_at: datetime
     updated_at: datetime
+    meeting_link: str | None = None
+    attendee_user_ids: list[int] = []
 
     model_config = {"from_attributes": True}

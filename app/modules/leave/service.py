@@ -1,3 +1,5 @@
+from datetime import date
+
 from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -86,19 +88,45 @@ class LeaveService:
             if employee.reports_to_id
             else None
         )
+        leave_type = payload.leave_type.strip()
+        if not leave_type:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Leave type is required",
+            )
+
+        requested_days = leave_days_inclusive(payload.start_date, payload.end_date)
+        available_days = await self.available_balance(employee.id, leave_type)
+        if requested_days > available_days:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    f"Insufficient {leave_type} balance. "
+                    f"Requested {requested_days}, available {available_days}."
+                ),
+            )
+
+        approval_flow = await self.approval_flow_for_type(leave_type)
+        initial_status = LeaveStatus.pending_supervisor
+        if approval_flow == "No approval required":
+            initial_status = LeaveStatus.approved
+        elif approval_flow in {"Manager only", "Manager then HR"}:
+            initial_status = LeaveStatus.pending_manager
 
         leave = LeaveRequest(
             employee_id=employee.id,
+            leave_type=leave_type,
             start_date=payload.start_date,
             end_date=payload.end_date,
             reason=payload.reason,
+            status=initial_status,
             supervisor_id=supervisor_user.id if supervisor_user else None,
         )
         self.db.add(leave)
         await self.db.commit()
         await self.db.refresh(leave)
 
-        if leave.supervisor_id:
+        if leave.supervisor_id and leave.status == LeaveStatus.pending_supervisor:
             await self._notify(
                 leave.supervisor_id,
                 "Leave approval required",
@@ -250,3 +278,54 @@ class LeaveService:
                 body=body,
             )
         )
+
+    async def approval_flow_for_type(self, leave_type: str) -> str:
+        policy = await self.get_policy()
+        target_type = normalize_leave_type_key(leave_type)
+        for item in policy.get("leaveTypes", []):
+            if normalize_leave_type_key(item.get("name", "")) == target_type:
+                return item.get("approvalFlow") or policy.get("approvalFlow") or "Manager only"
+        return policy.get("approvalFlow") or "Manager only"
+
+    async def policy_balance_for_type(self, leave_type: str) -> int:
+        policy = await self.get_policy()
+        target_type = normalize_leave_type_key(leave_type)
+        for item in policy.get("leaveTypes", []):
+            if normalize_leave_type_key(item.get("name", "")) == target_type:
+                return int(item.get("balance") or 0)
+        return 0
+
+    async def available_balance(self, employee_id: int, leave_type: str) -> int:
+        allocated = await self.policy_balance_for_type(leave_type)
+        result = await self.db.execute(
+            select(LeaveRequest).where(
+                LeaveRequest.employee_id == employee_id,
+                LeaveRequest.status.in_(
+                    [
+                        LeaveStatus.pending_supervisor,
+                        LeaveStatus.pending_manager,
+                        LeaveStatus.approved,
+                        LeaveStatus.revoke_pending_supervisor,
+                        LeaveStatus.revoke_pending_manager,
+                    ]
+                ),
+            )
+        )
+        target_type = normalize_leave_type_key(leave_type)
+        used = sum(
+            leave_days_inclusive(item.start_date, item.end_date)
+            for item in result.scalars().all()
+            if normalize_leave_type_key(item.leave_type) == target_type
+        )
+        return max(0, allocated - used)
+
+
+def leave_days_inclusive(start_date: date, end_date: date) -> int:
+    return max(1, (end_date - start_date).days + 1)
+
+
+def normalize_leave_type_key(value: object) -> str:
+    text_value = str(value or "Leave").strip().lower()
+    if text_value.endswith(" leave"):
+        return text_value[: -len(" leave")].strip()
+    return text_value
