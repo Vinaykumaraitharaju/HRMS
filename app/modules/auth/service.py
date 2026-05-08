@@ -123,6 +123,7 @@ class AuthService:
             )
 
         user.password_hash = hash_password(new_password)
+        user.password_change_required = False
 
         await self.db.commit()
 

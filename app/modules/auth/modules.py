@@ -54,6 +54,7 @@ class User(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     totp_secret: Mapped[str] = mapped_column(String(64), nullable=True)
     totp_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    password_change_required: Mapped[bool] = mapped_column(Boolean, default=False)
 
     employee_id: Mapped[int] = mapped_column(
         ForeignKey("employees.id", ondelete="SET NULL"),

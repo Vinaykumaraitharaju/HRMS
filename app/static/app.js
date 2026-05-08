@@ -20,6 +20,7 @@
   applyRoleWorkspace();
   restoreProfilePhoto();
   renderSidebar();
+  enforcePasswordChangeIfRequired();
 
   await loadLeavePolicyStateFromBackend();
 
@@ -350,6 +351,7 @@ const profileMobileInput = document.querySelector("#profileMobileInput");
 const currentPasswordInput = document.querySelector("#currentPasswordInput");
 const newPasswordInput = document.querySelector("#newPasswordInput");
 const confirmPasswordInput = document.querySelector("#confirmPasswordInput");
+const passwordChangeRequiredNotice = document.querySelector("#passwordChangeRequiredNotice");
 const saveProfileButton = document.querySelector("#saveProfileButton");
 const themeToggle = document.querySelector("#themeToggle");
 const employeeAdminPanel = document.querySelector("#employeeAdminPanel");
@@ -1571,17 +1573,32 @@ function handleProfileMenuAction(action) {
   }
 }
 
-function saveProfileChanges() {
+function enforcePasswordChangeIfRequired() {
+  if (!window.currentUser?.password_change_required) {
+    passwordChangeRequiredNotice?.classList.add("hidden");
+    return;
+  }
+
+  passwordChangeRequiredNotice?.classList.remove("hidden");
+  showView("profile", "profileView");
+  showToast("Please change your temporary password.");
+  currentPasswordInput?.focus();
+}
+
+async function saveProfileChanges() {
   const mobile = profileMobileInput.value.trim() || "";
   const currentPassword = currentPasswordInput.value || "";
   const newPassword = newPasswordInput.value || "";
   const confirmPassword = confirmPasswordInput.value || "";
-  if (!mobile) {
+  const passwordRequired = Boolean(window.currentUser?.password_change_required);
+
+  if (!mobile && !passwordRequired) {
     showToast("Mobile number is required.");
     profileMobileInput.focus();
     return;
   }
-  if (newPassword || confirmPassword || currentPassword) {
+
+  if (passwordRequired || newPassword || confirmPassword || currentPassword) {
     if (!currentPassword) {
       showToast("Enter current password before changing password.");
       currentPasswordInput.focus();
@@ -1597,11 +1614,37 @@ function saveProfileChanges() {
       confirmPasswordInput.focus();
       return;
     }
-    currentPasswordInput.value = "";
-    newPasswordInput.value = "";
-    confirmPasswordInput.value = "";
-    showToast("Profile and password updated.");
-    return;
+
+    try {
+      if (saveProfileButton) {
+        saveProfileButton.disabled = true;
+        saveProfileButton.textContent = "Saving...";
+      }
+
+      await fetchJson("/api/v1/auth/change-password", {
+        method: "POST",
+        body: JSON.stringify({
+          current_password: currentPassword,
+          new_password: newPassword,
+        }),
+      });
+
+      currentPasswordInput.value = "";
+      newPasswordInput.value = "";
+      confirmPasswordInput.value = "";
+      window.currentUser.password_change_required = false;
+      passwordChangeRequiredNotice?.classList.add("hidden");
+      showToast("Password updated. Use your new password next time.");
+      return;
+    } catch (err) {
+      showToast(err.message || "Password update failed.");
+      return;
+    } finally {
+      if (saveProfileButton) {
+        saveProfileButton.disabled = false;
+        saveProfileButton.textContent = "Save profile";
+      }
+    }
   }
   showToast("Profile details saved.");
 }

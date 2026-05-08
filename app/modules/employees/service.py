@@ -110,6 +110,7 @@ class EmployeeService:
             employee_id=employee.id,
             roles=[role],
             is_active=True,
+            password_change_required=True,
         )
 
         self.db.add(user)

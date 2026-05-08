@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import Base, engine
 from app.core.database import get_db
 from app.core.dependencies import get_current_user, require_roles
-from app.core.security import decode_access_token, hash_password
+from app.core.security import decode_access_token, hash_password, verify_password
 from app.modules.auth.models import Role, RoleModel, User, user_roles
 from app.modules.auth.schemas import (
     ForgotPasswordRequest,
@@ -32,6 +32,11 @@ class UserRoleUpdateRequest(BaseModel):
 class AdminPasswordResetRequest(BaseModel):
     password: str
     reset_authenticator: bool = True
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
 
 
 def role_value(role_name: Role | str) -> str:
@@ -64,6 +69,7 @@ def user_row_payload(row, roles: list[str]) -> dict:
         "employee_code": row.employee_code,
         "job_title": row.job_title,
         "totp_enabled": bool(getattr(row, "totp_enabled", False)),
+        "password_change_required": bool(getattr(row, "password_change_required", False)),
         "roles": roles,
     }
 
@@ -167,7 +173,30 @@ async def me(
         "role": roles[0] if roles else "employee",
         "roles": roles,
         "totp_enabled": bool(user.totp_enabled),
+        "password_change_required": bool(user.password_change_required),
     }
+
+
+@router.post("/change-password")
+async def change_password(
+    payload: ChangePasswordRequest,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+):
+    current_password = str(payload.current_password or "")
+    new_password = str(payload.new_password or "")
+
+    if len(new_password) < 8:
+        raise HTTPException(status_code=400, detail="New password must be at least 8 characters")
+
+    if not verify_password(current_password, current_user.password_hash):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+
+    current_user.password_hash = hash_password(new_password[:72])
+    current_user.password_change_required = False
+    await db.commit()
+
+    return {"message": "Password updated successfully"}
 
 
 @router.post("/logout")
@@ -250,6 +279,7 @@ async def reset_employee_password(
         raise HTTPException(status_code=404, detail="Employee user account not found")
 
     user.password_hash = hash_password(password[:72])
+    user.password_change_required = True
     if payload.reset_authenticator:
         user.totp_secret = None
         user.totp_enabled = False
@@ -294,6 +324,7 @@ async def seed_admin(payload: dict, db: Annotated[AsyncSession, Depends(get_db)]
         if user:
             user.password_hash = hash_password(password)
             user.is_active = True
+            user.password_change_required = False
             user.roles = [admin_role]
             await db.commit()
             return {"message": "Admin updated", "email": email}
@@ -304,6 +335,7 @@ async def seed_admin(payload: dict, db: Annotated[AsyncSession, Depends(get_db)]
             employee_id=None,
             roles=[admin_role],
             is_active=True,
+            password_change_required=False,
         )
 
         db.add(user)
@@ -332,6 +364,7 @@ async def _directory_payload(db: AsyncSession) -> list[dict]:
             User.email,
             User.employee_id,
             User.totp_enabled,
+            User.password_change_required,
             Employee.first_name,
             Employee.last_name,
             Employee.employee_code,

@@ -123,6 +123,12 @@ async def _migrate_auth_totp_columns() -> None:
             await conn.execute(
                 text("ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_enabled BOOLEAN NOT NULL DEFAULT FALSE")
             )
+            await conn.execute(
+                text(
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS password_change_required "
+                    "BOOLEAN NOT NULL DEFAULT FALSE"
+                )
+            )
             return
 
         if conn.dialect.name == "sqlite":
@@ -133,6 +139,10 @@ async def _migrate_auth_totp_columns() -> None:
             if "totp_enabled" not in columns:
                 await conn.execute(
                     text("ALTER TABLE users ADD COLUMN totp_enabled BOOLEAN NOT NULL DEFAULT 0")
+                )
+            if "password_change_required" not in columns:
+                await conn.execute(
+                    text("ALTER TABLE users ADD COLUMN password_change_required BOOLEAN NOT NULL DEFAULT 0")
                 )
 
 
