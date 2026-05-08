@@ -41,6 +41,16 @@
 })();
 let chatPollingInterval = null;
 
+function handleAuthExpired() {
+  sessionStorage.removeItem("hrms_access_token");
+  stopChatPolling();
+  fetch("/api/v1/auth/logout", { method: "POST", credentials: "include" }).finally(() => {
+    if (!window.location.pathname.startsWith("/login")) {
+      window.location.href = "/login";
+    }
+  });
+}
+
 function startChatPolling() {
   if (chatPollingInterval) return;
 
@@ -76,6 +86,7 @@ async function checkAuth() {
 
     return true;
   } catch {
+    handleAuthExpired();
     return false;
   }
 }
@@ -715,6 +726,9 @@ async function fetchJson(url, options = {}) {
       detail = payload.detail || detail;
     } catch {
       // fallback
+    }
+    if (response.status === 401) {
+      handleAuthExpired();
     }
     throw new Error(detail);
   }
