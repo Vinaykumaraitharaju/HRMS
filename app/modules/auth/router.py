@@ -29,6 +29,11 @@ class UserRoleUpdateRequest(BaseModel):
     role: Role
 
 
+class AdminPasswordResetRequest(BaseModel):
+    password: str
+    reset_authenticator: bool = True
+
+
 def role_value(role_name: Role | str) -> str:
     return role_name.value if isinstance(role_name, Role) else str(role_name)
 
@@ -58,6 +63,7 @@ def user_row_payload(row, roles: list[str]) -> dict:
         "employee_id": row.employee_id,
         "employee_code": row.employee_code,
         "job_title": row.job_title,
+        "totp_enabled": bool(getattr(row, "totp_enabled", False)),
         "roles": roles,
     }
 
@@ -224,6 +230,39 @@ async def update_user_role(
     }
 
 
+@router.post("/employees/{employee_id}/reset-password")
+async def reset_employee_password(
+    employee_id: int,
+    payload: AdminPasswordResetRequest,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _: Annotated[User, Depends(require_roles(Role.admin))],
+):
+    password = str(payload.password or "")
+    if len(password) < 8:
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
+
+    result = await db.execute(
+        select(User).where(User.employee_id == employee_id, User.is_active.is_(True))
+    )
+    user = result.scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="Employee user account not found")
+
+    user.password_hash = hash_password(password[:72])
+    if payload.reset_authenticator:
+        user.totp_secret = None
+        user.totp_enabled = False
+
+    await db.commit()
+
+    return {
+        "message": "Password reset",
+        "email": user.email,
+        "authenticator_reset": bool(payload.reset_authenticator),
+    }
+
+
 @router.post("/seed-admin")
 async def seed_admin(payload: dict, db: Annotated[AsyncSession, Depends(get_db)]):
     email = (payload.get("email") or "").strip().lower()
@@ -292,6 +331,7 @@ async def _directory_payload(db: AsyncSession) -> list[dict]:
             User.id,
             User.email,
             User.employee_id,
+            User.totp_enabled,
             Employee.first_name,
             Employee.last_name,
             Employee.employee_code,

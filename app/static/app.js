@@ -381,6 +381,10 @@ const accessRoleInput = document.querySelector("#accessRoleInput");
 const accessSupervisorInput = document.querySelector("#accessSupervisorInput");
 const accessManagerInput = document.querySelector("#accessManagerInput");
 const accessAdminRows = document.querySelector("#accessAdminRows");
+const passwordResetForm = document.querySelector("#passwordResetForm");
+const passwordResetEmployeeInput = document.querySelector("#passwordResetEmployeeInput");
+const passwordResetInput = document.querySelector("#passwordResetInput");
+const passwordResetAuthenticatorInput = document.querySelector("#passwordResetAuthenticatorInput");
 const assignmentRuleForm = document.querySelector("#assignmentRuleForm");
 const ruleProjectInput = document.querySelector("#ruleProjectInput");
 const ruleLocationInput = document.querySelector("#ruleLocationInput");
@@ -1885,6 +1889,7 @@ function mapApiEmployee(employee, usersByEmployeeId = new Map()) {
     project: "",
     location: "",
     role: user?.roles?.[0] || "employee",
+    totpEnabled: Boolean(user?.totp_enabled),
     manager: employee.reports_to_id ? employeeNameById(employee.reports_to_id) : "",
     managerId: employee.reports_to_id || null,
     supervisor: "",
@@ -2322,6 +2327,7 @@ function renderAccessOptions(selectedEmployeeId = accessEmployeeInput.value) {
   if (!accessEmployeeInput || !accessSupervisorInput || !accessManagerInput) return;
   const currentSupervisor = accessSupervisorInput.value;
   const currentManager = accessManagerInput.value;
+  const selectedPasswordResetEmployee = passwordResetEmployeeInput?.value || selectedEmployeeId;
   const employeeOptions = adminEmployees
     .map((employee) => `<option value="${employee.id}">${employee.name} - ${employee?.role || ""}</option>`)
     .join("");
@@ -2335,7 +2341,13 @@ function renderAccessOptions(selectedEmployeeId = accessEmployeeInput.value) {
     .map((employee) => `<option value="${employee.name}">${employee.name}</option>`)
     .join("")}`;
   accessEmployeeInput.innerHTML = employeeOptions;
+  if (passwordResetEmployeeInput) passwordResetEmployeeInput.innerHTML = employeeOptions;
   if (selectedEmployee) accessEmployeeInput.value = selectedEmployee.id;
+  if (passwordResetEmployeeInput) {
+    passwordResetEmployeeInput.value = adminEmployees.some((employee) => employee.id === selectedPasswordResetEmployee)
+      ? selectedPasswordResetEmployee
+      : accessEmployeeInput.value;
+  }
   accessSupervisorInput.innerHTML = supervisorOptions;
   accessManagerInput.innerHTML = managerOptions;
   accessSupervisorInput.value = isEligibleSupervisor(currentSupervisor, selectedEmployee.name) ? currentSupervisor : "";
@@ -2346,6 +2358,7 @@ function syncAccessFormFromEmployee() {
   const employee = adminEmployees.find((item) => item.id === accessEmployeeInput.value);
   if (!employee) return;
   renderAccessOptions(employee.id);
+  if (passwordResetEmployeeInput) passwordResetEmployeeInput.value = employee.id;
   accessRoleInput.value = employee.role;
   accessSupervisorInput.value = isEligibleSupervisor(employee.supervisor, employee.name) ? employee.supervisor || "" : "";
   accessManagerInput.value = isEligibleManager(employee.manager, employee.name) ? employee.manager || "" : "";
@@ -2388,6 +2401,10 @@ function renderAccessAdmin() {
               <b class="status ${employee.active ? "approved" : "revoked"}">
                 ${employee.active ? "Active" : "Inactive"}
               </b>
+            </div>
+            <div>
+              <span>Authenticator</span>
+              <b>${employee.totpEnabled ? "Set up" : "Not set up"}</b>
             </div>
           </div>
         </article>
@@ -2500,6 +2517,57 @@ async function submitAccessAdmin(event) {
     showToast(err.message || "Access update failed.");
   }
 }
+
+async function submitPasswordResetAdmin(event) {
+  event.preventDefault();
+
+  const employee = adminEmployees.find((item) => item.id === passwordResetEmployeeInput?.value);
+  const password = passwordResetInput?.value?.trim() || "";
+
+  if (!employee) {
+    showToast("Select an employee.");
+    return;
+  }
+
+  if (password.length < 8) {
+    showToast("Temporary password must be at least 8 characters.");
+    passwordResetInput?.focus();
+    return;
+  }
+
+  const button = passwordResetForm?.querySelector("button[type='submit']");
+  const buttonText = button?.textContent || "Reset password";
+
+  try {
+    if (button) {
+      button.disabled = true;
+      button.textContent = "Resetting...";
+    }
+
+    await fetchJson(`/api/v1/auth/employees/${employee.id}/reset-password`, {
+      method: "POST",
+      body: JSON.stringify({
+        password,
+        reset_authenticator: Boolean(passwordResetAuthenticatorInput?.checked),
+      }),
+    });
+
+    if (passwordResetInput) passwordResetInput.value = "";
+    await loadAdminDataFromApi();
+    renderAccessOptions(employee.id);
+    renderAccessAdmin();
+    recordAudit("Access", `Reset password for ${employee.name}`);
+    showToast(`Password reset for ${employee.name}.`);
+  } catch (err) {
+    showToast(err.message || "Password reset failed.");
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.textContent = buttonText;
+    }
+  }
+}
+
 function submitAssignmentRule(event) {
   event.preventDefault();
 
@@ -6572,6 +6640,7 @@ function bindInteractions() {
   });
   accessEmployeeInput?.addEventListener("change", syncAccessFormFromEmployee);
   accessAdminForm?.addEventListener("submit", submitAccessAdmin);
+  passwordResetForm?.addEventListener("submit", submitPasswordResetAdmin);
   assignmentRuleForm?.addEventListener("submit", submitAssignmentRule);
   assignmentRuleRows?.addEventListener("click", (event) => {
     const button = event.target.closest("[data-rule-action]");

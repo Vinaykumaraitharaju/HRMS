@@ -280,6 +280,14 @@
               <label>Manager<select id="accessManagerInput"></select></label>
               <button class="primary-action" type="submit">Update access</button>
             </form>
+            <form id="passwordResetForm" class="admin-form compact-form">
+              <label>Employee<select id="passwordResetEmployeeInput"></select></label>
+              <label>Temporary password<input id="passwordResetInput" type="text" minlength="8"
+                  placeholder="TempPass#2026" required /></label>
+              <label><input id="passwordResetAuthenticatorInput" type="checkbox" checked /> Reset Microsoft
+                Authenticator</label>
+              <button class="primary-action" type="submit">Reset password</button>
+            </form>
             <div id="accessAdminRows" class="policy-list"></div>
             <form id="assignmentRuleForm" class="admin-form compact-form">
               <label>Project<input id="ruleProjectInput" list="projectOptionsList" /></label>
