@@ -6670,7 +6670,7 @@ body[data-view="chat"] .chat-input {
   inset: auto !important;
   z-index: 5 !important;
   display: grid !important;
-  grid-template-columns: minmax(0, 1fr) auto !important;
+  grid-template-columns: minmax(320px, 72%) auto !important;
   align-items: end !important;
   gap: 12px !important;
   min-height: 78px !important;
@@ -6688,6 +6688,7 @@ body[data-view="chat"] .chat-input textarea#chatMessage {
   display: block !important;
   grid-column: 1 !important;
   width: 100% !important;
+  max-width: 1000px !important;
   min-height: 54px !important;
   height: 54px !important;
   max-height: 84px !important;
