@@ -116,6 +116,26 @@ async def _migrate_sqlite_employees_reports_to_nullable() -> None:
         await conn.execute(text("PRAGMA foreign_keys=ON"))
 
 
+async def _migrate_auth_totp_columns() -> None:
+    async with engine.begin() as conn:
+        if conn.dialect.name == "postgresql":
+            await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_secret VARCHAR(64)"))
+            await conn.execute(
+                text("ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_enabled BOOLEAN NOT NULL DEFAULT FALSE")
+            )
+            return
+
+        if conn.dialect.name == "sqlite":
+            pragma_rows = await conn.execute(text("PRAGMA table_info(users)"))
+            columns = {row[1] for row in pragma_rows.fetchall()}
+            if "totp_secret" not in columns:
+                await conn.execute(text("ALTER TABLE users ADD COLUMN totp_secret VARCHAR(64)"))
+            if "totp_enabled" not in columns:
+                await conn.execute(
+                    text("ALTER TABLE users ADD COLUMN totp_enabled BOOLEAN NOT NULL DEFAULT 0")
+                )
+
+
 def create_app() -> FastAPI:
     app = FastAPI(title=settings.app_name, version="0.1.0")
     static_dir = Path(__file__).resolve().parent / "static"
@@ -171,6 +191,7 @@ def create_app() -> FastAPI:
     @app.on_event("startup")
     async def normalize_role_enum_values() -> None:
         await _migrate_sqlite_employees_reports_to_nullable()
+        await _migrate_auth_totp_columns()
 
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)

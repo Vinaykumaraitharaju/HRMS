@@ -162,6 +162,30 @@
       margin-bottom: 10px;
     }
 
+    .mfa-setup-card {
+      display: grid;
+      gap: 12px;
+      margin: 12px 0;
+    }
+
+    .mfa-qr {
+      width: 164px;
+      max-width: 100%;
+      padding: 10px;
+      border-radius: 18px;
+      background: #fff;
+    }
+
+    .manual-key {
+      word-break: break-all;
+      font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, .08);
+      color: #9be58f;
+      font-size: 12px;
+    }
+
     .button-loading {
       opacity: .75;
       pointer-events: none;
@@ -223,9 +247,31 @@
         <button id="showForgotPassword" type="button">Forgot password?</button>
       </div>
 
+      <div id="mfaPanel" class="auth-panel hidden">
+        <h2 id="mfaTitle">Microsoft Authenticator</h2>
+        <p id="mfaHelpText">Enter the 6-digit code from Microsoft Authenticator.</p>
+
+        <div id="mfaSetupCard" class="mfa-setup-card hidden">
+          <img id="mfaQrCode" class="mfa-qr" alt="Microsoft Authenticator QR code" />
+          <div>
+            <p>If scanning does not work, add this setup key manually:</p>
+            <div id="mfaManualKey" class="manual-key"></div>
+          </div>
+        </div>
+
+        <form class="login-form" id="mfaForm">
+          <label>
+            <span>Authenticator code</span>
+            <input id="mfaCodeInput" type="text" inputmode="numeric" maxlength="6" placeholder="123456" autocomplete="one-time-code" required />
+          </label>
+
+          <button id="mfaVerifyBtn" type="submit">Verify code</button>
+        </form>
+      </div>
+
       <div id="forgotPasswordPanel" class="auth-panel hidden">
         <h2>Reset password</h2>
-        <p id="resetHelpText">Enter your email or employee ID. We will send an OTP to your registered email.</p>
+        <p id="resetHelpText">Enter your email or employee ID. Password reset uses your Microsoft Authenticator code.</p>
 
         <form class="login-form" id="forgotPasswordForm">
           <label>
@@ -233,7 +279,7 @@
             <input id="forgotLoginInput" type="text" placeholder="260102 or name@wavelynk.com" autocomplete="username" required />
           </label>
 
-          <button id="sendOtpBtn" type="submit">Send OTP</button>
+          <button id="sendOtpBtn" type="submit">Continue</button>
         </form>
 
         <form class="login-form hidden" id="resetPasswordForm">
@@ -251,12 +297,12 @@
 
           <div class="otp-meta">
             <div class="timer-pill">
-              <span>OTP expiry</span>
-              <strong id="expiryTimer">10:00</strong>
+              <span>Security method</span>
+              <strong id="expiryTimer">Authenticator</strong>
             </div>
 
             <div class="resend-row">
-              <span id="resendTimer">Resend OTP in 30s</span>
+              <span id="resendTimer">Use the current 6-digit app code.</span>
               <button id="resendOtpBtn" type="button" disabled>Resend OTP</button>
             </div>
           </div>
@@ -298,6 +344,15 @@
     const successBox = document.querySelector("#loginSuccess");
 
     const showForgotPassword = document.querySelector("#showForgotPassword");
+    const mfaPanel = document.querySelector("#mfaPanel");
+    const mfaForm = document.querySelector("#mfaForm");
+    const mfaTitle = document.querySelector("#mfaTitle");
+    const mfaHelpText = document.querySelector("#mfaHelpText");
+    const mfaSetupCard = document.querySelector("#mfaSetupCard");
+    const mfaQrCode = document.querySelector("#mfaQrCode");
+    const mfaManualKey = document.querySelector("#mfaManualKey");
+    const mfaCodeInput = document.querySelector("#mfaCodeInput");
+    const mfaVerifyBtn = document.querySelector("#mfaVerifyBtn");
     const forgotPanel = document.querySelector("#forgotPasswordPanel");
     const forgotForm = document.querySelector("#forgotPasswordForm");
     const resetForm = document.querySelector("#resetPasswordForm");
@@ -319,6 +374,7 @@
     let expiryInterval = null;
     let resendSeconds = 30;
     let expirySeconds = 600;
+    let pendingMfaLogin = null;
 
     function setStatus(message = "", isError = false) {
       errorBox.textContent = isError ? message : "";
@@ -440,12 +496,39 @@
     function showResetForm() {
       forgotForm.classList.add("hidden");
       resetForm.classList.remove("hidden");
-      resetHelpText.textContent = "Enter the OTP sent to your registered email and create a new password.";
+      resetHelpText.textContent = "Enter your Microsoft Authenticator code and create a new password.";
       clearOtp();
+      clearInterval(resendInterval);
+      clearInterval(expiryInterval);
+      expiryTimer.textContent = "Authenticator";
+      resendTimer.textContent = "Use the current 6-digit app code.";
+      resendOtpBtn.classList.add("hidden");
 
       requestAnimationFrame(() => {
         otpBoxes[0]?.focus();
       });
+    }
+
+    function showMfaChallenge(data = {}) {
+      mfaPanel.classList.remove("hidden");
+      forgotPanel.classList.add("hidden");
+      mfaSetupCard.classList.add("hidden");
+      mfaQrCode.removeAttribute("src");
+      mfaManualKey.textContent = "";
+      mfaCodeInput.value = "";
+
+      if (data.mfa_setup_required) {
+        mfaTitle.textContent = "Set up Microsoft Authenticator";
+        mfaHelpText.textContent = "Scan this QR code in Microsoft Authenticator, then enter the 6-digit code.";
+        mfaQrCode.src = data.qr_code_data_url || "";
+        mfaManualKey.textContent = data.manual_setup_key || "";
+        mfaSetupCard.classList.remove("hidden");
+      } else {
+        mfaTitle.textContent = "Microsoft Authenticator";
+        mfaHelpText.textContent = data.message || "Enter the 6-digit code from Microsoft Authenticator.";
+      }
+
+      requestAnimationFrame(() => mfaCodeInput.focus());
     }
 
     async function sendOtp(isResend = false) {
@@ -459,15 +542,14 @@
 
       try {
         setStatus("");
-        setLoading(sendOtpBtn, true, isResend ? "Resending..." : "Sending...");
+        setLoading(sendOtpBtn, true, "Checking...");
         resendOtpBtn.disabled = true;
 
         const data = await postJson("/api/v1/auth/forgot-password", { login });
 
         showResetForm();
-        startOtpTimers();
 
-        setStatus(data.message || (isResend ? "New OTP sent." : "OTP sent. Check your registered email."));
+        setStatus(data.message || "Enter your Microsoft Authenticator code.");
       } catch (err) {
         setStatus(err.message || "Could not send OTP", true);
       } finally {
@@ -526,10 +608,17 @@
       try {
         setLoading(loginBtn, true, "Logging in...");
 
-        const tokenPayload = await postJson("/api/v1/auth/login", {
+        const loginPayload = {
           login: loginInput.value.trim(),
           password: passwordInput.value,
-        });
+        };
+        const tokenPayload = await postJson("/api/v1/auth/login", loginPayload);
+
+        if (tokenPayload?.mfa_required || tokenPayload?.mfa_setup_required) {
+          pendingMfaLogin = loginPayload;
+          showMfaChallenge(tokenPayload);
+          return;
+        }
 
         if (tokenPayload?.access_token) {
           sessionStorage.setItem("hrms_access_token", tokenPayload.access_token);
@@ -543,16 +632,59 @@
       }
     });
 
+    mfaForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      setStatus("");
+
+      const code = mfaCodeInput.value.replace(/\D/g, "");
+      if (code.length !== 6) {
+        setStatus("Enter the complete 6-digit Authenticator code.", true);
+        mfaCodeInput.focus();
+        return;
+      }
+
+      if (!pendingMfaLogin) {
+        setStatus("Please enter your password again before verifying Authenticator.", true);
+        return;
+      }
+
+      try {
+        setLoading(mfaVerifyBtn, true, "Verifying...");
+        const tokenPayload = await postJson("/api/v1/auth/login", {
+          ...pendingMfaLogin,
+          totp_code: code,
+        });
+
+        if (tokenPayload?.mfa_required || tokenPayload?.mfa_setup_required) {
+          showMfaChallenge(tokenPayload);
+          setStatus(tokenPayload.message || "Invalid Authenticator code.", true);
+          return;
+        }
+
+        if (tokenPayload?.access_token) {
+          sessionStorage.setItem("hrms_access_token", tokenPayload.access_token);
+        }
+
+        window.location.href = "/dashboard";
+      } catch (err) {
+        setStatus(err.message || "Invalid Authenticator code.", true);
+      } finally {
+        setLoading(mfaVerifyBtn, false);
+      }
+    });
+
     showForgotPassword.addEventListener("click", () => {
       const isOpening = forgotPanel.classList.contains("hidden");
 
       forgotPanel.classList.toggle("hidden");
+      mfaPanel.classList.add("hidden");
       setStatus("");
 
       if (isOpening) {
         forgotForm.classList.remove("hidden");
         resetForm.classList.add("hidden");
-        resetHelpText.textContent = "Enter your email or employee ID. We will send an OTP to your registered email.";
+        resetHelpText.textContent = "Enter your email or employee ID. Password reset uses your Microsoft Authenticator code.";
+        resendOtpBtn.classList.remove("hidden");
 
         clearInterval(resendInterval);
         clearInterval(expiryInterval);
@@ -580,12 +712,6 @@
       if (otp.length !== 6) {
         setStatus("Please enter the complete 6-digit OTP", true);
         otpBoxes[0]?.focus();
-        return;
-      }
-
-      if (expirySeconds <= 0) {
-        setStatus("OTP expired. Please resend OTP.", true);
-        resendOtpBtn.disabled = false;
         return;
       }
 

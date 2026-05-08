@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import hashlib
 import json
 import logging
@@ -8,16 +9,20 @@ import random
 import smtplib
 from datetime import UTC, datetime, timedelta
 from email.message import EmailMessage
+from io import BytesIO
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
+import pyotp
+import qrcode
 from fastapi import HTTPException, status
 from sqlalchemy import func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.security import create_access_token, hash_password, verify_password
 from app.modules.auth.models import PasswordResetOTP, Role, RoleModel, User
-from app.modules.auth.schemas import Token, UserCreate
+from app.modules.auth.schemas import LoginResponse, UserCreate
 from app.modules.employees.models import Employee
 
 EMAIL_TIMEOUT_SECONDS = 15
@@ -29,7 +34,9 @@ class AuthService:
         self.db = db
 
     # ---------------- LOGIN ----------------
-    async def authenticate(self, login: str, password: str) -> Token:
+    async def authenticate(
+        self, login: str, password: str, totp_code: str | None = None
+    ) -> LoginResponse:
         user = await self._find_user_by_login(login)
 
         if (
@@ -42,9 +49,38 @@ class AuthService:
                 detail="Invalid email/employee ID or password",
             )
 
+        if user.totp_enabled:
+            if not self._verify_totp_code(user, totp_code):
+                return LoginResponse(
+                    mfa_required=True,
+                    message="Enter the 6-digit code from Microsoft Authenticator.",
+                )
+        else:
+            if not user.totp_secret:
+                user.totp_secret = pyotp.random_base32()
+                await self.db.commit()
+                await self.db.refresh(user)
+
+            if not totp_code:
+                return LoginResponse(
+                    mfa_setup_required=True,
+                    message="Set up Microsoft Authenticator to continue.",
+                    **self._totp_setup_payload(user),
+                )
+
+            if not self._verify_totp_code(user, totp_code):
+                return LoginResponse(
+                    mfa_setup_required=True,
+                    message="Invalid Authenticator code. Scan the QR and try again.",
+                    **self._totp_setup_payload(user),
+                )
+
+            user.totp_enabled = True
+            await self.db.commit()
+
         roles = [self._role_to_str(role.name) for role in user.roles]
         token = create_access_token(str(user.id), {"roles": roles})
-        return Token(access_token=token)
+        return LoginResponse(access_token=token)
 
     # ---------------- SEND OTP ----------------
     async def send_reset_otp(self, login: str) -> dict[str, str]:
@@ -53,51 +89,20 @@ class AuthService:
         if not user or not user.is_active:
             logger.info("Password reset OTP requested for unknown/inactive login=%s", login)
             return {
-                "message": "If the account exists, an OTP has been sent to the registered email."
+                "message": "If the account exists, use Microsoft Authenticator to reset the password."
             }
 
-        logger.info("Password reset OTP requested user_id=%s email=%s", user.id, user.email)
-
-        otp = f"{random.SystemRandom().randint(100000, 999999)}"
-        otp_hash = self._otp_hash(user.id, otp)
-        expires_at = datetime.now(UTC) + timedelta(minutes=10)
-
-        # invalidate old OTPs
-        await self.db.execute(
-            update(PasswordResetOTP)
-            .where(
-                PasswordResetOTP.user_id == user.id,
-                PasswordResetOTP.used_at.is_(None),
+        if not user.totp_enabled:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    "Microsoft Authenticator is not set up for this account. "
+                    "Ask an admin to reset the password."
+                ),
             )
-            .values(used_at=datetime.now(UTC))
-        )
 
-        self.db.add(
-            PasswordResetOTP(
-                user_id=user.id,
-                otp_hash=otp_hash,
-                expires_at=expires_at,
-            )
-        )
-
-        await self.db.commit()
-
-        try:
-            await self._send_otp_email(user.email, otp)
-        except HTTPException as exc:
-            logger.warning(
-                "Password reset OTP email failed user_id=%s email=%s detail=%s",
-                user.id,
-                user.email,
-                exc.detail,
-            )
-            raise
-
-        logger.info("Password reset OTP email sent user_id=%s email=%s", user.id, user.email)
-
-        return {
-            "message": "If the account exists, an OTP has been sent to the registered email."
-        }
+        logger.info("Password reset requested with Authenticator user_id=%s email=%s", user.id, user.email)
+        return {"message": "Enter your Microsoft Authenticator code to reset password."}
 
     # ---------------- RESET PASSWORD ----------------
     async def reset_password_with_otp(
@@ -111,30 +116,13 @@ class AuthService:
                 detail="Invalid or expired OTP",
             )
 
-        otp_hash = self._otp_hash(user.id, otp.strip())
-        now = datetime.now(UTC)
-
-        result = await self.db.execute(
-            select(PasswordResetOTP)
-            .where(
-                PasswordResetOTP.user_id == user.id,
-                PasswordResetOTP.otp_hash == otp_hash,
-                PasswordResetOTP.used_at.is_(None),
-                PasswordResetOTP.expires_at > now,
-            )
-            .order_by(PasswordResetOTP.id.desc())
-        )
-
-        reset_otp = result.scalars().first()
-
-        if not reset_otp:
+        if not user.totp_enabled or not self._verify_totp_code(user, otp):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid or expired OTP",
+                detail="Invalid Microsoft Authenticator code",
             )
 
         user.password_hash = hash_password(new_password)
-        reset_otp.used_at = now
 
         await self.db.commit()
 
@@ -346,6 +334,35 @@ class AuthService:
         secret = os.getenv("JWT_SECRET_KEY", "dev-secret")
         raw = f"{user_id}:{otp}:{secret}"
         return hashlib.sha256(raw.encode()).hexdigest()
+
+    def _totp_setup_payload(self, user: User) -> dict[str, str]:
+        if not user.totp_secret:
+            raise HTTPException(status_code=500, detail="Authenticator setup missing secret")
+
+        otp_auth_uri = pyotp.TOTP(user.totp_secret).provisioning_uri(
+            name=user.email,
+            issuer_name=settings.app_name,
+        )
+        qr = qrcode.make(otp_auth_uri)
+        buffer = BytesIO()
+        qr.save(buffer, format="PNG")
+        qr_data = base64.b64encode(buffer.getvalue()).decode("ascii")
+
+        return {
+            "otp_auth_uri": otp_auth_uri,
+            "qr_code_data_url": f"data:image/png;base64,{qr_data}",
+            "manual_setup_key": user.totp_secret,
+        }
+
+    def _verify_totp_code(self, user: User, code: str | None) -> bool:
+        if not user.totp_secret or not code:
+            return False
+
+        normalized_code = "".join(char for char in str(code) if char.isdigit())
+        if len(normalized_code) != 6:
+            return False
+
+        return pyotp.TOTP(user.totp_secret).verify(normalized_code, valid_window=1)
 
     def _role_to_str(self, value: Role | str) -> str:
         return value.value if isinstance(value, Role) else str(value)

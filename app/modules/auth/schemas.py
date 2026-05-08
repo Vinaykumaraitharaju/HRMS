@@ -8,10 +8,22 @@ class Token(BaseModel):
     token_type: str = "bearer"
 
 
+class LoginResponse(BaseModel):
+    access_token: str | None = None
+    token_type: str = "bearer"
+    mfa_required: bool = False
+    mfa_setup_required: bool = False
+    message: str | None = None
+    otp_auth_uri: str | None = None
+    qr_code_data_url: str | None = None
+    manual_setup_key: str | None = None
+
+
 class LoginRequest(BaseModel):
     # Accepts either work email or employee code / employee id.
     login: str = Field(min_length=1, max_length=255)
     password: str = Field(min_length=8)
+    totp_code: str | None = Field(default=None, min_length=6, max_length=6)
 
 
 class ForgotPasswordRequest(BaseModel):

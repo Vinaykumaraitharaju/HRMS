@@ -13,9 +13,9 @@ from app.core.security import decode_access_token, hash_password
 from app.modules.auth.models import Role, RoleModel, User, user_roles
 from app.modules.auth.schemas import (
     ForgotPasswordRequest,
+    LoginResponse,
     LoginRequest,
     ResetPasswordRequest,
-    Token,
     UserCreate,
     UserRead,
 )
@@ -74,8 +74,15 @@ async def login(
     payload: LoginRequest,
     response: Response,
     db: Annotated[AsyncSession, Depends(get_db)],
-) -> Token:
-    token = await AuthService(db).authenticate(payload.login, payload.password)
+) -> LoginResponse:
+    token = await AuthService(db).authenticate(
+        payload.login,
+        payload.password,
+        payload.totp_code,
+    )
+
+    if not token.access_token:
+        return token
 
     response.set_cookie(
         key="access_token",
@@ -153,6 +160,7 @@ async def me(
         "job_title": employee.job_title if employee else None,
         "role": roles[0] if roles else "employee",
         "roles": roles,
+        "totp_enabled": bool(user.totp_enabled),
     }
 
 

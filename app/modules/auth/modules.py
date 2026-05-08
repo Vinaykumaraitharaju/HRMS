@@ -52,6 +52,8 @@ class User(Base):
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     password_hash: Mapped[str] = mapped_column(String(255))
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    totp_secret: Mapped[str] = mapped_column(String(64), nullable=True)
+    totp_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
 
     employee_id: Mapped[int] = mapped_column(
         ForeignKey("employees.id", ondelete="SET NULL"),
