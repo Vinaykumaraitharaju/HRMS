@@ -6264,6 +6264,34 @@ body[data-view="chat"] .composer-tools {
   align-self: center !important;
 }
 
+/* Hard dock the chat typing box in the visible bottom area. */
+body[data-view="chat"] .teams-thread {
+  position: relative !important;
+  padding-bottom: 104px !important;
+}
+
+body[data-view="chat"] .chat-thread {
+  padding-bottom: 18px !important;
+}
+
+body[data-view="chat"] .chat-input {
+  position: absolute !important;
+  left: 16px !important;
+  right: 16px !important;
+  bottom: 16px !important;
+  z-index: 20 !important;
+  width: auto !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) max-content !important;
+  align-items: center !important;
+  gap: 12px !important;
+  min-height: 76px !important;
+  max-height: 86px !important;
+  padding: 10px 12px !important;
+  margin: 0 !important;
+  transform: none !important;
+}
+
 /* Keep Pulse suite pages clear of the fixed mini rail after later page padding rules. */
 @media (min-width: 901px) {
   body[data-view="activity"] #activityView,
