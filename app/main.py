@@ -17,6 +17,8 @@ from app.core.config import settings
 from app.core.database import Base
 from app.core.database import AsyncSessionLocal
 from app.core.database import engine
+from app.core.database import resolved_database_url
+from app.core.database import is_postgres_url
 from app.core.security import decode_access_token
 from app.core.security import hash_password
 from app.db import schema  # noqa: F401  # Ensure model metadata is registered
@@ -247,7 +249,13 @@ def create_app() -> FastAPI:
 
     @app.get("/health")
     async def health():
-        return {"status": "ok", "service": settings.app_name, "web": "enabled"}
+        return {
+            "status": "ok",
+            "service": settings.app_name,
+            "web": "enabled",
+            "database": "postgres" if is_postgres_url(resolved_database_url) else "sqlite",
+            "persistent_database": is_postgres_url(resolved_database_url),
+        }
 
     @app.get("/", include_in_schema=False)
     async def web_app(request: Request):
