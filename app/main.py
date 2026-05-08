@@ -174,21 +174,22 @@ def create_app() -> FastAPI:
 
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
+            role_name_expr = "name::text" if conn.dialect.name == "postgresql" else "name"
             try:
                 await conn.execute(
-                    text("UPDATE roles SET name='admin' WHERE lower(name)='admin'")
+                    text(f"UPDATE roles SET name='admin' WHERE lower({role_name_expr})='admin'")
                 )
                 await conn.execute(
-                    text("UPDATE roles SET name='hr' WHERE lower(name)='hr'")
+                    text(f"UPDATE roles SET name='hr' WHERE lower({role_name_expr})='hr'")
                 )
                 await conn.execute(
-                    text("UPDATE roles SET name='manager' WHERE lower(name)='manager'")
+                    text(f"UPDATE roles SET name='manager' WHERE lower({role_name_expr})='manager'")
                 )
                 await conn.execute(
-                    text("UPDATE roles SET name='supervisor' WHERE lower(name)='supervisor'")
+                    text(f"UPDATE roles SET name='supervisor' WHERE lower({role_name_expr})='supervisor'")
                 )
                 await conn.execute(
-                    text("UPDATE roles SET name='employee' WHERE lower(name)='employee'")
+                    text(f"UPDATE roles SET name='employee' WHERE lower({role_name_expr})='employee'")
                 )
             except OperationalError:
                 # If startup races with initial DB bootstrap, continue without failing boot.
