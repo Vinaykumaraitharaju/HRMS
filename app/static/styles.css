@@ -4949,3 +4949,46 @@ body[data-view="chat"] #sendChat {
     justify-content: flex-start;
   }
 }
+
+/* Sidebar toggle visibility repair: keep the menu handle outside clipping layers. */
+.sidebar {
+  overflow: visible !important;
+}
+
+.sidebar-nav {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
+
+.sidebar-toggle {
+  position: fixed !important;
+  top: 112px !important;
+  left: 76px !important;
+  right: auto !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  z-index: 999 !important;
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.35) !important;
+}
+
+.sidebar.is-open .sidebar-toggle,
+.app-shell.sidebar-open .sidebar-toggle {
+  left: 312px !important;
+  top: 112px !important;
+}
+
+@media (max-width: 980px) {
+  .sidebar-toggle {
+    top: 102px !important;
+    left: 28px !important;
+  }
+
+  .sidebar.is-open .sidebar-toggle,
+  .app-shell.sidebar-open .sidebar-toggle {
+    left: min(292px, calc(100vw - 58px)) !important;
+  }
+}
