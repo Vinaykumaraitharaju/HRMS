@@ -20,13 +20,16 @@ class ChatGroupRead(BaseModel):
 class ChatMessageCreate(BaseModel):
     recipient_id: int | None = None
     group_id: int | None = None
-    body: str = Field(min_length=1, max_length=4000)
+    body: str = Field(default="", max_length=4000)
     mention_user_ids: list[int] = Field(default_factory=list)
+    attachments: list[dict] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def validate_target(self):
         if bool(self.recipient_id) == bool(self.group_id):
             raise ValueError("Provide exactly one of recipient_id or group_id")
+        if not self.body.strip() and not self.attachments:
+            raise ValueError("Provide a message or attachment")
         return self
 
 
@@ -36,6 +39,7 @@ class ChatMessageRead(BaseModel):
     recipient_id: int | None
     group_id: int | None
     body: str
+    attachments: list[dict] = Field(default_factory=list)
     mention_user_ids: list[int] = Field(default_factory=list)
     read_by_user_ids: list[int] = Field(default_factory=list)
     created_at: datetime

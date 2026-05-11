@@ -38,6 +38,8 @@ def _message_to_payload(message) -> dict:
         "group_id": _safe_get(message, "group_id"),
         "content": _safe_get(message, "content"),
         "message": _safe_get(message, "message"),
+        "body": _safe_get(message, "body"),
+        "attachments": _safe_get(message, "attachments", []),
         "created_at": str(_safe_get(message, "created_at", "")),
         "is_read": _safe_get(message, "is_read", False),
     }

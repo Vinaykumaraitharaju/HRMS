@@ -332,7 +332,10 @@ const adminActionLabels = {
 
 const appShell = document.querySelector("#appShell");
 const sidebarNav = document.querySelector("#sidebarNav");
+const sidebarToggle = document.querySelector("#sidebarToggle");
 const logoutButton = document.querySelector(".logout-button");
+const backButton = document.querySelector("#backButton");
+const forwardButton = document.querySelector("#forwardButton");
 const statsGrid = document.querySelector("#statsGrid");
 const teamStatusSection = document.querySelector("#teamStatusSection");
 const teamStatusScope = document.querySelector("#teamStatusScope");
@@ -720,6 +723,22 @@ function hydrateChatState(state) {
   }
 }
 
+function parseChatPayload(body = "", attachments = []) {
+  const rawBody = String(body || "");
+  if (rawBody.startsWith("__WAVELYNK_CHAT__")) {
+    try {
+      const payload = JSON.parse(rawBody.replace("__WAVELYNK_CHAT__", ""));
+      return {
+        body: payload.body || "",
+        attachments: Array.isArray(payload.attachments) ? payload.attachments : [],
+      };
+    } catch {
+      return { body: rawBody, attachments: attachments || [] };
+    }
+  }
+  return { body: rawBody, attachments: attachments || [] };
+}
+
 async function fetchJson(url, options = {}) {
   const token = sessionStorage.getItem("hrms_access_token");
   const response = await fetch(url, {
@@ -979,9 +998,21 @@ function bindSidebarReveal() {
   const sidebar = appShell.querySelector(".sidebar");
   if (!sidebar || sidebar.dataset.revealBound === "true") return;
   sidebar.dataset.revealBound = "true";
+
+  const setOpen = (open) => {
+    sidebar.classList.toggle("is-open", open);
+    sidebarToggle?.setAttribute("aria-expanded", open ? "true" : "false");
+  };
+
+  sidebarToggle?.addEventListener("click", (event) => {
+    event.stopPropagation();
+    setOpen(!sidebar.classList.contains("is-open"));
+  });
+
   sidebar.addEventListener("click", (event) => {
     if (event.target.closest(".nav-item")) return;
-    sidebar.classList.toggle("is-open");
+    if (event.target.closest(".sidebar-toggle")) return;
+    setOpen(!sidebar.classList.contains("is-open"));
   });
 }
 async function loadChatUsers() {
@@ -1084,22 +1115,26 @@ async function loadChatState() {
       const user = findChatUser(userId);
       const chat = grouped[userId].slice().sort((a, b) => parseChatDate(a.created_at) - parseChatDate(b.created_at));
       const last = chat[chat.length - 1];
+      const lastPayload = parseChatPayload(last?.body || "", last?.attachments || []);
 
       const convId = String(userId);
-      nextMessages[convId] = chat.map((m) => ({
-        id: m.id,
-        side: Number(m.sender_id) === loggedInUserId ? "right" : "left",
-        name:
-          Number(m.sender_id) === loggedInUserId
-            ? "You"
-            : displayUserName(user),
-        body: m.body || "",
-        time: formatChatTime(m.created_at),
-        created_at: m.created_at,
-        read: Array.isArray(m.read_by_user_ids) ? m.read_by_user_ids.includes(loggedInUserId) : false,
-        mentions: [],
-        attachments: [],
-      }));
+      nextMessages[convId] = chat.map((m) => {
+        const payload = parseChatPayload(m.body || "", m.attachments || []);
+        return {
+          id: m.id,
+          side: Number(m.sender_id) === loggedInUserId ? "right" : "left",
+          name:
+            Number(m.sender_id) === loggedInUserId
+              ? "You"
+              : displayUserName(user),
+          body: payload.body,
+          time: formatChatTime(m.created_at),
+          created_at: m.created_at,
+          read: Array.isArray(m.read_by_user_ids) ? m.read_by_user_ids.includes(loggedInUserId) : false,
+          mentions: [],
+          attachments: payload.attachments,
+        };
+      });
 
       nextUnread[convId] = chat.filter((m) =>
         Number(m.sender_id) !== loggedInUserId
@@ -1115,7 +1150,7 @@ async function loadChatState() {
         section: "Chats",
         name: displayUserName(user) || `User ${userId}`,
         role: user?.roles?.[0] || "User",
-        preview: last?.body || "No messages yet",
+        preview: attachmentPreviewLabel(lastPayload.attachments, lastPayload.body) || "No messages yet",
         time: last?.created_at
           ? formatChatTime(last.created_at)
           : "",
@@ -1490,6 +1525,39 @@ function showView(viewName, targetId) {
 function pushAppPath(path) {
   if (!path || window.location.pathname === path) return;
   window.history.pushState({ path }, "", path);
+  updateHistoryControls();
+}
+
+const viewPaths = {
+  dashboard: "/dashboard",
+  chat: "/chat",
+  timesheet: "/timesheet",
+  leave: "/leave",
+  calendar: "/calendar",
+  activity: "/activity",
+  profile: "/profile",
+};
+
+const pathViews = {
+  "/": ["dashboard", "dashboardSection", "Dashboard"],
+  "/dashboard": ["dashboard", "dashboardSection", "Dashboard"],
+  "/chat": ["chat", "chatView", "Chat"],
+  "/timesheet": ["timesheet", "timesheetView", "Timesheet"],
+  "/leave": ["leave", "leaveView", "Apply Leave"],
+  "/calendar": ["calendar", "calendarView", "Calendar"],
+  "/activity": ["activity", "activityView", "Activity"],
+  "/profile": ["profile", "profileView", "Settings"],
+};
+
+function navigateToView(viewName, targetId, label, pushPath = true) {
+  showView(viewName, targetId);
+  if (label) setActiveSidebarLabel(label);
+  if (pushPath) pushAppPath(viewPaths[viewName] || "/dashboard");
+}
+
+function updateHistoryControls() {
+  if (backButton) backButton.disabled = window.history.length <= 1;
+  if (forwardButton) forwardButton.disabled = false;
 }
 
 function setActiveSidebarLabel(label) {
@@ -1562,6 +1630,12 @@ function openAdminModule(action, pushPath = true) {
 
 function routeFromCurrentPath(pushPath = false) {
   const path = window.location.pathname;
+  const viewRoute = pathViews[path];
+  if (viewRoute) {
+    const [viewName, targetId, label] = viewRoute;
+    navigateToView(viewName, targetId, label, pushPath);
+    return true;
+  }
   if (path === "/admin") {
     openAdminConsole(pushPath);
     return true;
@@ -1578,12 +1652,12 @@ function handleProfileMenuAction(action) {
   profileDropdown.classList.remove("open");
   notificationDropdown.classList.remove("open");
   if (action === "view-profile") {
-    showView("profile", "profileView");
+    navigateToView("profile", "profileView", "Settings");
     showToast("Profile opened.");
     return;
   }
   if (action === "account-settings") {
-    showView("profile", "profileView");
+    navigateToView("profile", "profileView", "Settings");
     showToast("Account settings opened.");
   }
 }
@@ -1595,7 +1669,7 @@ function enforcePasswordChangeIfRequired() {
   }
 
   passwordChangeRequiredNotice?.classList.remove("hidden");
-  showView("profile", "profileView");
+  navigateToView("profile", "profileView", "Settings");
   showToast("Please change your temporary password.");
   currentPasswordInput?.focus();
 }
@@ -3729,7 +3803,7 @@ function handleQuickAction(action) {
   }
 
   if (action === "leave") {
-    showView("leave", "leaveView");
+    navigateToView("leave", "leaveView", "Apply Leave");
   }
 }
 
@@ -3950,15 +4024,15 @@ function renderSidebar() {
       button.classList.add("active");
       const label = button.dataset.label || button.querySelector("b").textContent || "Dashboard";
       if (label === "Chat") {
-        showView("chat", "chatView");
+        navigateToView("chat", "chatView", "Chat");
       } else if (label === "Timesheet") {
-        showView("timesheet", "timesheetView");
+        navigateToView("timesheet", "timesheetView", "Timesheet");
       } else if (label === "Leave" || label === "Apply Leave" || label === "My Leaves" || label === "Leave Balance" || label === "Leave Calendar") {
-        showView("leave", "leaveView");
+        navigateToView("leave", "leaveView", label);
       } else if (label === "Calendar" || label === "Leave Calendar") {
-        showView("calendar", "calendarView");
+        navigateToView("calendar", "calendarView", "Calendar");
       } else if (navTargets[label] === "profileView") {
-        showView("profile", "profileView");
+        navigateToView("profile", "profileView", label);
       } else if (adminNavActions[label]) {
         if (adminNavActions[label] === "admin-console") {
           openAdminConsole();
@@ -3966,7 +4040,7 @@ function renderSidebar() {
           openAdminModule(adminNavActions[label]);
         }
       } else {
-        showView("dashboard", navTargets[label] || "dashboardSection");
+        navigateToView("dashboard", navTargets[label] || "dashboardSection", label);
       }
     });
   });
@@ -5342,11 +5416,11 @@ function renderActivityFeed() {
         }
       }
       if (button.dataset.activityTarget === "calendar") {
-        showView("calendar", "calendarView");
+        navigateToView("calendar", "calendarView", "Calendar");
       } else if (button.dataset.activityTarget === "chat") {
-        showView("chat", "chatView");
+        navigateToView("chat", "chatView", "Chat");
       } else {
-        showView("dashboard", "dashboardSection");
+        navigateToView("dashboard", "dashboardSection", "Dashboard");
       }
     });
   });
@@ -6353,8 +6427,9 @@ function renderShared() {
 
 async function sendMessage() {
   const body = chatMessage.value.trim();
-  if (!body) {
-    showToast("Type a message before sending.");
+  const attachmentsToSend = pendingAttachments.map((attachment) => ({ ...attachment }));
+  if (!body && !attachmentsToSend.length) {
+    showToast("Type a message or attach a file before sending.");
     return;
   }
 
@@ -6374,7 +6449,7 @@ async function sendMessage() {
       created_at: new Date().toISOString(),
       read: false,
       mentions: [],
-      attachments: [],
+      attachments: attachmentsToSend,
     };
     if (!conversationMessages[optimisticConversationId]) conversationMessages[optimisticConversationId] = [];
     conversationMessages[optimisticConversationId].push(optimisticMessage);
@@ -6385,6 +6460,7 @@ async function sendMessage() {
       body: JSON.stringify({
         recipient_id: Number(activeRecipientId),
         body,
+        attachments: attachmentsToSend,
       }),
     });
     draftConversationIds.delete(String(activeRecipientId));
@@ -6837,11 +6913,11 @@ function bindInteractions() {
       button.classList.add("active");
       const label = button.dataset.app || button.querySelector("small").textContent || "";
       if (label === "Calendar") {
-        showView("calendar", "calendarView");
+        navigateToView("calendar", "calendarView", "Calendar");
       } else if (label === "Activity") {
-        showView("activity", "activityView");
+        navigateToView("activity", "activityView", "Activity");
       } else if (label === "Chat") {
-        showView("chat", "chatView");
+        navigateToView("chat", "chatView", "Chat");
         showToast("Chat opened.");
       } else {
         showToast(`${label} is ready for integration.`);
@@ -6853,16 +6929,15 @@ function bindInteractions() {
     button.addEventListener("click", () => {
       const view = button.dataset.suiteView;
       if (document.body.dataset.view === view) {
-        showView("dashboard", "dashboardSection");
-        setActiveSidebarLabel("Dashboard");
+        navigateToView("dashboard", "dashboardSection", "Dashboard");
         return;
       }
       if (view === "chat") {
-        showView("chat", "chatView");
+        navigateToView("chat", "chatView", "Chat");
       } else if (view === "activity") {
-        showView("activity", "activityView");
+        navigateToView("activity", "activityView", "Activity");
       } else if (view === "calendar") {
-        showView("calendar", "calendarView");
+        navigateToView("calendar", "calendarView", "Calendar");
       }
     });
   });
@@ -6873,6 +6948,12 @@ function bindInteractions() {
 
   logoutButton?.addEventListener("click", () => {
     logoutToLogin();
+  });
+  backButton?.addEventListener("click", () => {
+    window.history.back();
+  });
+  forwardButton?.addEventListener("click", () => {
+    window.history.forward();
   });
   teamStatusSearch?.addEventListener("input", renderTeamStatusBoard);
   document.querySelectorAll("[data-role-action]").forEach((button) => {
@@ -7185,11 +7266,12 @@ bindInteractions();
 routeFromCurrentPath(false);
 updateClock();
 syncViewportLayout();
+updateHistoryControls();
 window.addEventListener("popstate", () => {
   if (!routeFromCurrentPath(false)) {
-    showView("dashboard", "dashboardSection");
-    setActiveSidebarLabel("Dashboard");
+    navigateToView("dashboard", "dashboardSection", "Dashboard", false);
   }
+  updateHistoryControls();
 });
 window.addEventListener("resize", syncViewportLayout);
 setInterval(updateClock, 30000);

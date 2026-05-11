@@ -1,3 +1,5 @@
+import json
+
 from sqlalchemy import insert, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -17,8 +19,34 @@ from app.modules.notifications.service import NotificationService
 
 
 class ChatService:
+    PAYLOAD_PREFIX = "__WAVELYNK_CHAT__"
+
     def __init__(self, db: AsyncSession):
         self.db = db
+
+    def _serialize_message_payload(self, body: str, attachments: list[dict]) -> str:
+        safe_attachments = attachments or []
+        if not safe_attachments:
+            return body
+        payload = {"body": body, "attachments": safe_attachments}
+        return f"{self.PAYLOAD_PREFIX}{json.dumps(payload, separators=(',', ':'))}"
+
+    def _deserialize_message_payload(self, body: str) -> tuple[str, list[dict]]:
+        if body.startswith(self.PAYLOAD_PREFIX):
+            try:
+                payload = json.loads(body.removeprefix(self.PAYLOAD_PREFIX))
+                return payload.get("body", ""), payload.get("attachments", [])
+            except json.JSONDecodeError:
+                pass
+        return body, []
+
+    def _message_preview(self, body: str, attachments: list[dict]) -> str:
+        if attachments:
+            first = attachments[0] if attachments else {}
+            label = first.get("name") or "attachment"
+            base = label if len(attachments) == 1 else f"{len(attachments)} attachments"
+            return f"{base} - {body}" if body else base
+        return body
 
     async def create_group(self, current_user: User, payload: ChatGroupCreate) -> ChatGroup:
         group = ChatGroup(name=payload.name, created_by_id=current_user.id)
@@ -35,7 +63,8 @@ class ChatService:
         return group
 
     async def send_message(self, current_user: User, payload: ChatMessageCreate) -> ChatMessage:
-        data = payload.model_dump(exclude={"mention_user_ids"})
+        data = payload.model_dump(exclude={"mention_user_ids", "attachments"})
+        data["body"] = self._serialize_message_payload(payload.body.strip(), payload.attachments)
         message = ChatMessage(sender_id=current_user.id, **data)
         self.db.add(message)
         await self.db.flush()
@@ -49,15 +78,16 @@ class ChatService:
         self.db.add(ChatMessageReadReceipt(message_id=message.id, user_id=current_user.id))
         await self.db.commit()
         await self.db.refresh(message)
-        message.mention_user_ids = mention_ids
-        message.read_by_user_ids = [current_user.id]
+        plain_body, attachments = self._deserialize_message_payload(message.body)
+        preview_body = self._message_preview(plain_body, attachments)
         wire_payload = {
             "type": "message",
             "id": message.id,
             "sender_id": message.sender_id,
             "recipient_id": message.recipient_id,
             "group_id": message.group_id,
-            "body": message.body,
+            "body": plain_body,
+            "attachments": attachments,
             "mention_user_ids": mention_ids,
             "created_at": message.created_at.isoformat(),
         }
@@ -68,7 +98,7 @@ class ChatService:
                     recipient_user_id=message.recipient_id,
                     type=NotificationType.chat,
                     title="New message",
-                    body=message.body[:160],
+                    body=preview_body[:160],
                 )
             )
         if message.group_id:
@@ -81,9 +111,13 @@ class ChatService:
                     recipient_user_id=user_id,
                     type=NotificationType.chat,
                     title="You were mentioned",
-                    body=message.body[:160],
+                    body=preview_body[:160],
                 )
             )
+        message.body = plain_body
+        message.attachments = attachments
+        message.mention_user_ids = mention_ids
+        message.read_by_user_ids = [current_user.id]
         return message
 
     async def list_messages(self, current_user: User) -> list[ChatMessage]:
@@ -113,6 +147,9 @@ class ChatService:
             mention_map.setdefault(int(message_id), []).append(int(user_id))
 
         for message in messages:
+            plain_body, attachments = self._deserialize_message_payload(message.body)
+            message.body = plain_body
+            message.attachments = attachments
             message.mention_user_ids = mention_map.get(message.id, [])
             message.read_by_user_ids = [receipt.user_id for receipt in (message.read_receipts or [])]
 

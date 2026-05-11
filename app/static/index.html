@@ -27,6 +27,9 @@
   <div class="ambient-bg" aria-hidden="true"></div>
   <div class="app-shell" id="appShell">
     <aside class="sidebar glass-panel">
+      <button id="sidebarToggle" class="sidebar-toggle" type="button" aria-label="Toggle menu" aria-expanded="false">
+        <span></span>
+      </button>
       <div class="sidebar-brand">
         <b>W</b>
         <span>HRMS Portal</span>
@@ -56,6 +59,12 @@
     <main class="main-content">
       <header class="top-header glass-panel">
         <div class="top-search">
+          <button class="history-button" id="backButton" type="button" aria-label="Go back" title="Back">
+            <span></span>
+          </button>
+          <button class="history-button forward" id="forwardButton" type="button" aria-label="Go forward" title="Forward">
+            <span></span>
+          </button>
           <span>Search</span>
           <input id="globalSearch" type="search" placeholder="Search employee ID, name, email" />
         </div>
