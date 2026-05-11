@@ -1666,8 +1666,16 @@ function routeFromCurrentPath(pushPath = false) {
 function handleProfileMenuAction(action) {
   profileDropdown.classList.remove("open");
   notificationDropdown.classList.remove("open");
+  const focusProfileCard = (selector) => {
+    const card = document.querySelector(selector);
+    if (!card) return;
+    card.scrollIntoView({ behavior: "smooth", block: "center" });
+    card.classList.add("profile-focus-card");
+    window.setTimeout(() => card.classList.remove("profile-focus-card"), 1200);
+  };
   if (action === "view-profile") {
     navigateToView("profile", "profileView", "Settings");
+    window.setTimeout(() => focusProfileCard("#profileDetailsCard"), 80);
     showToast("Profile opened.");
     return;
   }
@@ -1679,6 +1687,15 @@ function handleProfileMenuAction(action) {
   if (action === "settings") {
     navigateToView("profile", "profileView", "Settings");
     showToast("Settings opened.");
+    return;
+  }
+  if (action === "security") {
+    navigateToView("profile", "profileView", "Settings");
+    window.setTimeout(() => {
+      focusProfileCard("#profileSecurityCard");
+      currentPasswordInput?.focus();
+    }, 80);
+    showToast("Change password opened.");
     return;
   }
   if (action === "logout") {

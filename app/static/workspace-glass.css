@@ -7373,3 +7373,11 @@ body[data-view="dashboard"] .header-actions {
     left: min(292px, calc(100vw - 58px)) !important;
   }
 }
+
+/* Profile menu actions should look distinct and focused. */
+#profileDetailsCard:target,
+#profileSecurityCard:target,
+.profile-focus-card {
+  border-color: rgba(143, 227, 107, 0.48) !important;
+  box-shadow: 0 0 0 1px rgba(143, 227, 107, 0.18), 0 28px 70px rgba(0, 0, 0, 0.32) !important;
+}

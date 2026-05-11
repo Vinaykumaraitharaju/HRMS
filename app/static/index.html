@@ -95,7 +95,7 @@
             <div class="dropdown-menu profile-dropdown" id="profileDropdown">
               <strong>employee@wavelynk.com</strong>
               <button type="button" data-profile-action="view-profile">View profile</button>
-              <button type="button" data-profile-action="settings">Settings</button>
+              <button type="button" data-profile-action="security">Change password</button>
               <button type="button" data-profile-action="logout">Logout</button>
             </div>
           </div>
@@ -199,14 +199,14 @@
               <button id="profilePhotoUpload" class="primary-action" type="button">Upload photo</button>
               <small class="profile-note">Photo is saved only for your account.</small>
             </article>
-            <article class="glass-card form-card">
+            <article id="profileDetailsCard" class="glass-card form-card">
               <h3>Profile details</h3>
               <label>Employee ID<input id="profileEmployeeIdInput" type="text" readonly /></label>
               <label>Work email<input id="profileEmailInput" type="email" readonly /></label>
               <label>Mobile<input id="profileMobileInput" type="tel" placeholder="+91 90000 10001" /></label>
               <button id="saveProfileButton" class="primary-action" type="button">Save profile details</button>
             </article>
-            <article class="glass-card form-card">
+            <article id="profileSecurityCard" class="glass-card form-card">
               <h3>Security</h3>
               <div id="passwordChangeRequiredNotice" class="empty-state hidden">You are using a temporary password.
                 Create a new password before continuing.</div>
