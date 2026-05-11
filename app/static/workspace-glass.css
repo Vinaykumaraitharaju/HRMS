@@ -7320,3 +7320,56 @@ body[data-view="chat"] #sendChat {
     left: min(292px, calc(100vw - 58px)) !important;
   }
 }
+
+/* Header cleanup: dashboard has no search; profile owns account/logout. */
+body[data-view="dashboard"] .top-search {
+  display: none !important;
+}
+
+body[data-view="dashboard"] .top-header {
+  justify-content: flex-end !important;
+  pointer-events: none !important;
+}
+
+body[data-view="dashboard"] .header-actions {
+  margin-left: auto !important;
+  pointer-events: auto !important;
+}
+
+.logout-button {
+  display: none !important;
+}
+
+.profile-wrap {
+  margin-left: auto !important;
+}
+
+.profile-dropdown button[data-profile-action="logout"] {
+  color: #ffd2d9 !important;
+  border-color: rgba(255, 138, 154, 0.22) !important;
+}
+
+/* Keep the side menu button off page headers and content cards. */
+.sidebar-toggle {
+  top: 204px !important;
+  left: 24px !important;
+}
+
+.sidebar.is-open .sidebar-toggle,
+.app-shell.sidebar-open .sidebar-toggle {
+  top: 204px !important;
+  left: 318px !important;
+}
+
+@media (max-width: 980px) {
+  .sidebar-toggle {
+    top: 148px !important;
+    left: 18px !important;
+  }
+
+  .sidebar.is-open .sidebar-toggle,
+  .app-shell.sidebar-open .sidebar-toggle {
+    top: 148px !important;
+    left: min(292px, calc(100vw - 58px)) !important;
+  }
+}

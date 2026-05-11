@@ -1674,6 +1674,15 @@ function handleProfileMenuAction(action) {
   if (action === "account-settings") {
     navigateToView("profile", "profileView", "Settings");
     showToast("Account settings opened.");
+    return;
+  }
+  if (action === "settings") {
+    navigateToView("profile", "profileView", "Settings");
+    showToast("Settings opened.");
+    return;
+  }
+  if (action === "logout") {
+    logoutToLogin();
   }
 }
 
