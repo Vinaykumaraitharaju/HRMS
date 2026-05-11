@@ -4080,28 +4080,28 @@ function logoutToLogin() {
 function renderSidebar() {
   const totalUnread = totalUnreadCount();
   const displayLabels = {
-    Dashboard: "Command Deck",
-    Chat: "Team Pulse",
-    Timesheet: "Time Studio",
-    Leave: "Leave Hub",
-    "Apply Leave": "New Leave",
-    "My Requests": "Request Vault",
-    "Expense Claims": "Expense Lab",
-    Notifications: "Signal Center",
-    Settings: "My Console",
-    Employees: "Talent Atlas",
-    "Roles & Access": "Access Matrix",
-    "Leave Policies": "Policy Garden",
-    "Team Leaves": "Approval Desk",
-    "Timesheet Control": "Time Rules",
-    "Audit Logs": "Audit Trail",
+    Dashboard: "Dashboard",
+    Chat: "Chat",
+    Timesheet: "Timesheet",
+    Leave: "Leave",
+    "Apply Leave": "Apply Leave",
+    "My Requests": "My Requests",
+    "Expense Claims": "Expenses",
+    Notifications: "Notifications",
+    Settings: "Settings",
+    Employees: "Employees",
+    "Roles & Access": "Roles & Access",
+    "Leave Policies": "Leave Settings",
+    "Team Leaves": "Team Leave Requests",
+    "Timesheet Control": "Timesheet Settings",
+    "Audit Logs": "Audit Logs",
   };
   const displayHeadings = {
-    "People Ops": "Control Suite",
-    "Leave Management": "Time Away",
-    "Attendance & Time": "Operations",
-    Requests: "Flow Desk",
-    Others: "System",
+    "People Ops": "People",
+    "Leave Management": "Leave",
+    "Attendance & Time": "Attendance & Time",
+    Requests: "Requests",
+    Others: "More",
   };
   sidebarNav.innerHTML = currentRoleProfile.nav
     .map(([heading, items]) => `

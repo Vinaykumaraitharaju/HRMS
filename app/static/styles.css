@@ -316,7 +316,7 @@ button {
 }
 
 .sidebar-brand span::after {
-  content: "People Command";
+  content: "Main Menu";
   color: var(--muted);
   font-size: 12px;
   font-weight: 600;
@@ -4991,4 +4991,59 @@ body[data-view="chat"] #sendChat {
   .app-shell.sidebar-open .sidebar-toggle {
     left: min(292px, calc(100vw - 58px)) !important;
   }
+}
+
+/* User-friendly side menu handle: always show a clear three-line menu icon. */
+.sidebar-toggle {
+  width: 42px !important;
+  height: 42px !important;
+  color: #9af08f !important;
+}
+
+.sidebar-toggle span,
+.sidebar-toggle span::before,
+.sidebar-toggle span::after {
+  display: block !important;
+  width: 18px !important;
+  height: 2px !important;
+  border-radius: 999px !important;
+  background: currentColor !important;
+}
+
+.sidebar-toggle span {
+  position: relative !important;
+  transform: none !important;
+}
+
+.sidebar-toggle span::before,
+.sidebar-toggle span::after {
+  content: "" !important;
+  position: absolute !important;
+  left: 0 !important;
+  transform: none !important;
+  transform-origin: center !important;
+  opacity: 1 !important;
+}
+
+.sidebar-toggle span::before {
+  top: -6px !important;
+}
+
+.sidebar-toggle span::after {
+  top: 6px !important;
+}
+
+.sidebar.is-open .sidebar-toggle span,
+.sidebar.is-open .sidebar-toggle span::before,
+.sidebar.is-open .sidebar-toggle span::after {
+  width: 18px !important;
+  transform: none !important;
+}
+
+.sidebar.is-open .sidebar-toggle span::before {
+  top: -6px !important;
+}
+
+.sidebar.is-open .sidebar-toggle span::after {
+  top: 6px !important;
 }
