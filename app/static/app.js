@@ -103,21 +103,21 @@ const employeeNavSections = [
 
 const managerNavSections = [
   ["", [["Dashboard", "D"], ["Chat", "C", "8"], ["Timesheet", "S"]]],
-  ["Leave Management", [["Apply Leave", "+"]]],
+  ["Leave Management", [["Apply Leave", "+"], ["Team Leaves", "A"]]],
   ["Others", [["Notifications", "N", "5"], ["Settings", "G"]]],
 ];
 
 const hrNavSections = [
   ["", [["Dashboard", "D"], ["Chat", "C", "8"], ["Timesheet", "S"]]],
   ["People Ops", [["Employees", "E"], ["Roles & Access", "R"], ["Leave Policies", "L"]]],
-  ["Leave Management", [["Apply Leave", "+"]]],
+  ["Leave Management", [["Apply Leave", "+"], ["Team Leaves", "A"]]],
   ["Others", [["Notifications", "N", "5"], ["Settings", "G"]]],
 ];
 
 const adminNavSections = [
   ["", [["Dashboard", "D"], ["Chat", "C", "8"], ["Timesheet", "S"]]],
   ["People Ops", [["Employees", "E"], ["Roles & Access", "R"], ["Leave Policies", "L"]]],
-  ["Leave Management", [["Apply Leave", "+"]]],
+  ["Leave Management", [["Apply Leave", "+"], ["Team Leaves", "A"]]],
   ["Attendance & Time", [["Timesheet Control", "T"], ["Audit Logs", "G"]]],
   ["Others", [["Notifications", "N", "5"], ["Settings", "G"]]],
 ];
@@ -189,6 +189,7 @@ const roleProfiles = {
 
 let currentRole = "employee";
 let currentRoleProfile = roleProfiles.employee;
+let teamLeaveRequests = [];
 document.body.dataset.view = "dashboard";
 
 const stats = [
@@ -284,6 +285,7 @@ const navTargets = {
   Employees: "adminView",
   "Roles & Access": "adminView",
   "Leave Policies": "adminView",
+  "Team Leaves": "adminView",
   "Shift Settings": "adminView",
   "Timesheet Control": "adminView",
   "Audit Logs": "adminView",
@@ -306,6 +308,7 @@ const adminActionPaths = {
   "open-employees": "/admin/employees",
   "manage-roles": "/admin/roles-access",
   "leave-policy": "/admin/leave-policies",
+  "team-leaves": "/admin/team-leaves",
   "timesheet-freeze": "/admin/timesheet-control",
   "audit-logs": "/admin/audit-logs",
 };
@@ -317,6 +320,7 @@ const adminNavActions = {
   Employees: "open-employees",
   "Roles & Access": "manage-roles",
   "Leave Policies": "leave-policy",
+  "Team Leaves": "team-leaves",
   "Shift Settings": "timesheet-freeze",
   "Timesheet Control": "timesheet-freeze",
   "Audit Logs": "audit-logs",
@@ -326,6 +330,7 @@ const adminActionLabels = {
   "open-employees": "Employees",
   "manage-roles": "Roles & Access",
   "leave-policy": "Leave Policies",
+  "team-leaves": "Team Leaves",
   "timesheet-freeze": "Timesheet Control",
   "audit-logs": "Audit Logs",
 };
@@ -405,6 +410,10 @@ const ruleManagerInput = document.querySelector("#ruleManagerInput");
 const assignmentRuleRows = document.querySelector("#assignmentRuleRows");
 const assignmentRuleCount = document.querySelector("#assignmentRuleCount");
 const leavePolicyPanel = document.querySelector("#leavePolicyPanel");
+const teamLeavePanel = document.querySelector("#teamLeavePanel");
+const teamLeaveRows = document.querySelector("#teamLeaveRows");
+const teamLeaveSummary = document.querySelector("#teamLeaveSummary");
+const refreshTeamLeaveRequests = document.querySelector("#refreshTeamLeaveRequests");
 const leavePolicyForm = document.querySelector("#leavePolicyForm");
 const annualBalanceInput = document.querySelector("#annualBalanceInput");
 const casualBalanceInput = document.querySelector("#casualBalanceInput");
@@ -1001,6 +1010,7 @@ function bindSidebarReveal() {
 
   const setOpen = (open) => {
     sidebar.classList.toggle("is-open", open);
+    appShell.classList.toggle("sidebar-open", open);
     sidebarToggle?.setAttribute("aria-expanded", open ? "true" : "false");
   };
 
@@ -1577,7 +1587,8 @@ function setActiveAdminButton(action) {
 }
 
 function hideAdminPanels() {
-  [employeeAdminPanel, rolesAccessPanel, leavePolicyPanel, timesheetControlPanel, auditLogPanel].forEach((panel) => {
+  [employeeAdminPanel, rolesAccessPanel, leavePolicyPanel, teamLeavePanel, timesheetControlPanel, auditLogPanel].forEach((panel) => {
+    if (!panel) return;
     panel.classList.add("hidden");
   });
 }
@@ -1617,6 +1628,10 @@ function openAdminModule(action, pushPath = true) {
   }
   if (action === "leave-policy") {
     openLeavePolicyAdmin();
+    return;
+  }
+  if (action === "team-leaves") {
+    openTeamLeaveAdmin();
     return;
   }
   if (action === "timesheet-freeze") {
@@ -3140,6 +3155,103 @@ function openLeavePolicyAdmin() {
   showToast("Leave policies opened.");
 }
 
+function currentUserRoleValues() {
+  return (window.currentUser?.roles || [currentRole])
+    .map((role) => normalizeRoleForApi(role))
+    .filter(Boolean);
+}
+
+function canActOnTeamLeave(request, action) {
+  const roles = currentUserRoleValues();
+  const status = safeStatus(request?.status).toLowerCase();
+  if (roles.includes("admin")) return true;
+  if (action === "supervisor-approve") {
+    return status === "pending supervisor" && (roles.includes("supervisor") || roles.includes("manager"));
+  }
+  if (action === "manager-approve") {
+    return status === "pending manager" && (roles.includes("manager") || roles.includes("hr"));
+  }
+  if (action === "reject") {
+    return (status.startsWith("pending") || status.startsWith("revoke pending"))
+      && (roles.includes("supervisor") || roles.includes("manager") || roles.includes("hr"));
+  }
+  return false;
+}
+
+async function loadTeamLeaveRequests() {
+  const rows = await fetchJson("/api/v1/leaves/team");
+  teamLeaveRequests = mapLeaveStateRequests(rows);
+  renderTeamLeaveRequests();
+}
+
+function renderTeamLeaveRequests() {
+  if (!teamLeaveRows) return;
+  const pendingCount = teamLeaveRequests.filter((request) => safeStatus(request?.status).toLowerCase().startsWith("pending")).length;
+  if (teamLeaveSummary) {
+    teamLeaveSummary.innerHTML = `
+      <span><strong>${teamLeaveRequests.length}</strong><small>visible requests</small></span>
+      <span><strong>${pendingCount}</strong><small>waiting approval</small></span>
+      <span><strong>${currentRoleProfile.label}</strong><small>current role</small></span>
+    `;
+  }
+  teamLeaveRows.innerHTML = teamLeaveRequests.map((request) => {
+    const employee = adminEmployees.find((item) => Number(item.id) === Number(request.employeeId));
+    const requester = request.requesterName || employee?.name || "Employee";
+    const requesterCode = request.requesterCode || employee?.employeeId || `#${request.employeeId || ""}`;
+    const supervisorButton = canActOnTeamLeave(request, "supervisor-approve")
+      ? `<button type="button" data-team-leave-action="supervisor-approve" data-team-leave-id="${request.id}">Supervisor approve</button>`
+      : "";
+    const managerButton = canActOnTeamLeave(request, "manager-approve")
+      ? `<button type="button" data-team-leave-action="manager-approve" data-team-leave-id="${request.id}">Approve</button>`
+      : "";
+    const rejectButton = canActOnTeamLeave(request, "reject")
+      ? `<button type="button" data-team-leave-action="reject" data-team-leave-id="${request.id}">Reject</button>`
+      : "";
+    return `
+      <article class="team-leave-row">
+        <div>
+          <strong>${requester}</strong>
+          <small>${requesterCode} - ${request.leaveId}</small>
+        </div>
+        <div>
+          <span>${request.type}</span>
+          <small>${formatDateRange(request.start, request.end)} - ${request.days} day${request.days === 1 ? "" : "s"}</small>
+        </div>
+        <p>${request.reason}</p>
+        <span class="status ${statusClass(request.status)}">${request.status}</span>
+        <div class="policy-row-actions">${supervisorButton}${managerButton}${rejectButton}</div>
+      </article>`;
+  }).join("") || `<div class="empty-state">No team leave requests are waiting for your role.</div>`;
+}
+
+async function openTeamLeaveAdmin() {
+  teamLeavePanel?.classList.remove("hidden");
+  try {
+    await Promise.allSettled([loadAdminDataFromApi(), loadTeamLeaveRequests()]);
+    renderTeamLeaveRequests();
+    scrollAdminPanelIntoView(teamLeavePanel);
+    showToast("Team leave requests opened.");
+  } catch (err) {
+    renderTeamLeaveRequests();
+    showToast(err.message || "Team leave requests could not be loaded.");
+  }
+}
+
+async function decideTeamLeaveRequest(requestId, action) {
+  const route = action === "supervisor-approve"
+    ? `/api/v1/leaves/${requestId}/supervisor-approve`
+    : action === "manager-approve"
+      ? `/api/v1/leaves/${requestId}/manager-approve`
+      : `/api/v1/leaves/${requestId}/reject`;
+  try {
+    await fetchJson(route, { method: "POST", body: JSON.stringify({ note: "" }) });
+    await Promise.allSettled([loadTeamLeaveRequests(), loadLeaveState(), loadNotificationState()]);
+    showToast(action === "reject" ? "Leave request rejected." : "Leave request approved.");
+  } catch (err) {
+    showToast(err.message || "Leave request could not be updated.");
+  }
+}
+
 function submitLeavePolicyAdmin(event) {
   event.preventDefault();
   const holidayCountry = holidayCountryInput.value || leavePolicyState.holidayCountry || "India";
@@ -3526,6 +3638,10 @@ function handleRoleAction(action, target) {
     return;
   }
   if (action === "leave-policy") {
+    openAdminModule(action);
+    return;
+  }
+  if (action === "team-leaves") {
     openAdminModule(action);
     return;
   }
@@ -3976,6 +4092,7 @@ function renderSidebar() {
     Employees: "Talent Atlas",
     "Roles & Access": "Access Matrix",
     "Leave Policies": "Policy Garden",
+    "Team Leaves": "Approval Desk",
     "Timesheet Control": "Time Rules",
     "Audit Logs": "Audit Trail",
   };
@@ -4005,6 +4122,7 @@ function renderSidebar() {
         Employees: "E",
         "Roles & Access": "A",
         "Leave Policies": "L",
+        "Team Leaves": "A",
         "Timesheet Control": "T",
         "Audit Logs": "G",
       };
@@ -4987,6 +5105,9 @@ function mapLeaveStateRequests(state) {
 
     return {
       id: item?.id,
+      employeeId: item?.employee_id,
+      requesterName: item?.requester_name || "",
+      requesterCode: item?.requester_employee_code || "",
       leaveId: item?.leave_id || formatLeaveRequestId(item),
       type: item?.leave_type || "Leave",
       start: item?.start_date || "",
@@ -6746,6 +6867,16 @@ function bindInteractions() {
     const button = event.target.closest("[data-revoke-leave]");
     if (!button) return;
     revokeLeaveRequest(button.dataset.revokeLeave);
+  });
+  refreshTeamLeaveRequests?.addEventListener("click", () => {
+    loadTeamLeaveRequests().then(() => showToast("Team leave requests refreshed.")).catch((err) => {
+      showToast(err.message || "Team leave requests could not be refreshed.");
+    });
+  });
+  teamLeaveRows?.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-team-leave-action]");
+    if (!button) return;
+    decideTeamLeaveRequest(button.dataset.teamLeaveId, button.dataset.teamLeaveAction);
   });
   leaveStartInput?.addEventListener("change", syncLeaveRangeFromInputs);
   leaveEndInput?.addEventListener("change", syncLeaveRangeFromInputs);

@@ -235,6 +235,7 @@
               <button type="button" data-role-action="open-employees">👥 Employees</button>
               <button type="button" data-role-action="manage-roles">🔐 Roles & Access</button>
               <button type="button" data-role-action="leave-policy">🌿 Leave Policies</button>
+              <button type="button" data-role-action="team-leaves">Team Leave Requests</button>
               <button type="button" data-role-action="timesheet-freeze">⏱ Timesheet Control</button>
               <button type="button" data-role-action="audit-logs">📜 Audit Logs</button>
             </div>
@@ -364,6 +365,15 @@
               <button class="primary-action" type="submit">Add holiday</button>
             </form>
             <div id="holidayPolicyList" class="policy-list"></div>
+          </section>
+
+          <section id="teamLeavePanel" class="glass-card admin-panel hidden">
+            <div class="card-head">
+              <h2>Team Leave Requests</h2>
+              <button id="refreshTeamLeaveRequests" type="button">Refresh</button>
+            </div>
+            <div id="teamLeaveSummary" class="admin-summary-strip"></div>
+            <div id="teamLeaveRows" class="policy-list team-leave-list"></div>
           </section>
 
           <section id="timesheetControlPanel" class="glass-card admin-panel hidden">

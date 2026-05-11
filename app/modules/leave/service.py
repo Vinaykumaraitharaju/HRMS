@@ -1,7 +1,7 @@
 from datetime import date
 
 from fastapi import HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.auth.models import User
@@ -141,6 +141,60 @@ class LeaveService:
             query = query.where(LeaveRequest.employee_id == current_user.employee_id)
         result = await self.db.execute(query)
         return list(result.scalars().all())
+
+    async def list_team(self, current_user: User) -> list[LeaveRequest]:
+        role_values = {
+            getattr(role.name, "value", role.name)
+            for role in (getattr(current_user, "roles", None) or [])
+        }
+        pending_statuses = [
+            LeaveStatus.pending_supervisor,
+            LeaveStatus.pending_manager,
+            LeaveStatus.revoke_pending_supervisor,
+            LeaveStatus.revoke_pending_manager,
+        ]
+        query = (
+            select(LeaveRequest, Employee)
+            .join(Employee, LeaveRequest.employee_id == Employee.id)
+            .order_by(LeaveRequest.created_at.desc())
+        )
+
+        if "admin" in role_values or "hr" in role_values:
+            query = query.where(LeaveRequest.status.in_(pending_statuses))
+        elif "manager" in role_values:
+            query = query.where(
+                LeaveRequest.status.in_(
+                    [
+                        LeaveStatus.pending_manager,
+                        LeaveStatus.pending_supervisor,
+                        LeaveStatus.revoke_pending_manager,
+                    ]
+                )
+            )
+        elif "supervisor" in role_values:
+            query = query.where(
+                LeaveRequest.status.in_(
+                    [LeaveStatus.pending_supervisor, LeaveStatus.revoke_pending_supervisor]
+                ),
+                or_(
+                    LeaveRequest.supervisor_id == current_user.id,
+                    Employee.reports_to_id == current_user.employee_id,
+                    LeaveRequest.supervisor_id.is_(None),
+                ),
+            )
+        else:
+            return []
+
+        result = await self.db.execute(query)
+        leaves: list[LeaveRequest] = []
+        for leave, employee in result.all():
+            leave.requester_name = (
+                f"{employee.first_name or ''} {employee.last_name or ''}".strip()
+                or f"Employee {employee.id}"
+            )
+            leave.requester_employee_code = employee.employee_code
+            leaves.append(leave)
+        return leaves
 
     async def supervisor_approve(
         self, leave_id: int, approver: User, payload: LeaveDecision

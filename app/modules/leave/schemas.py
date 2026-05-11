@@ -25,6 +25,8 @@ class LeaveDecision(BaseModel):
 class LeaveRead(BaseModel):
     id: int
     employee_id: int
+    requester_name: str | None = None
+    requester_employee_code: str | None = None
     leave_type: str
     start_date: date
     end_date: date

@@ -118,6 +118,16 @@ async def list_leaves(
     return await LeaveService(db).list(current_user)
 
 
+@router.get("/team", response_model=list[LeaveRead])
+async def list_team_leaves(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[
+        User, Depends(require_roles(Role.supervisor, Role.manager, Role.hr, Role.admin))
+    ],
+):
+    return await LeaveService(db).list_team(current_user)
+
+
 @router.post("/{leave_id}/supervisor-approve", response_model=LeaveRead)
 async def supervisor_approve(
     leave_id: int,
@@ -154,7 +164,7 @@ async def manager_approve(
     leave_id: int,
     payload: LeaveDecision,
     db: Annotated[AsyncSession, Depends(get_db)],
-    current_user: Annotated[User, Depends(require_roles(Role.manager, Role.admin))],
+    current_user: Annotated[User, Depends(require_roles(Role.manager, Role.hr, Role.admin))],
 ):
     leave = await LeaveService(db).manager_approve(leave_id, current_user, payload)
     await safe_record_audit(
@@ -184,7 +194,7 @@ async def reject_leave(
     payload: LeaveDecision,
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[
-        User, Depends(require_roles(Role.supervisor, Role.manager, Role.admin))
+        User, Depends(require_roles(Role.supervisor, Role.manager, Role.hr, Role.admin))
     ],
 ):
     leave = await LeaveService(db).reject(leave_id, current_user, payload)
