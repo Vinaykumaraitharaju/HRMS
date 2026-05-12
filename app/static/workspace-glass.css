@@ -625,13 +625,6 @@ body[data-view="dashboard"] .content-grid {
   padding-right: 2px;
 }
 
-body[data-view="dashboard"] #dashboardView {
-  display: grid;
-  grid-template-rows: minmax(170px, auto) minmax(360px, 1fr) auto auto;
-  gap: 14px;
-  overflow: auto;
-}
-
 body[data-view="chat"] .workspace-view:not(.hidden),
 body[data-view="activity"] .workspace-view:not(.hidden),
 body[data-view="calendar"] .workspace-view:not(.hidden) {
@@ -642,9 +635,9 @@ body[data-view="calendar"] .workspace-view:not(.hidden) {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 280px;
   gap: 18px;
-  min-height: 190px;
-  padding: 34px;
-  margin-bottom: 0;
+  min-height: 310px;
+  padding: 62px 34px;
+  margin-bottom: 16px;
   border-radius: 22px;
   background: var(--teal);
   color: #fff;
@@ -684,7 +677,7 @@ body[data-view="calendar"] .workspace-view:not(.hidden) {
   display: grid;
   align-content: center;
   gap: 8px;
-  min-height: 142px;
+  min-height: 190px;
   padding: 20px;
   border-radius: 18px;
   background: var(--teal-2);
@@ -721,14 +714,10 @@ body[data-view="calendar"] .workspace-view:not(.hidden) {
   display: grid;
   grid-template-columns: minmax(320px, 1.1fr) minmax(280px, 0.9fr) minmax(280px, 0.9fr);
   gap: 16px;
-  align-items: stretch;
-  min-height: 0;
 }
 
 .dashboard-mosaic .glass-card {
-  min-height: 0;
-  max-height: 100%;
-  overflow: auto;
+  min-height: 210px;
   background: var(--teal-2);
   color: #fff;
   border-color: rgba(255, 255, 255, 0.12);
@@ -2070,7 +2059,7 @@ body[data-view="calendar"] .pulse-suite-nav.glass-panel {
   display: grid;
   place-items: center;
   padding: 18px;
-  background: rgba(16, 27, 79, 0.42);
+  background: rgba(16, 27, 79, 0.34);
 }
 
 .modal-card {
@@ -2078,12 +2067,9 @@ body[data-view="calendar"] .pulse-suite-nav.glass-panel {
   max-height: calc(100vh - 48px);
   overflow: auto;
   padding: 20px;
-  background: var(--surface);
-  color: var(--ink);
 }
 
-.modal-head,
-.modal-card .card-head {
+.modal-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -2091,16 +2077,13 @@ body[data-view="calendar"] .pulse-suite-nav.glass-panel {
   margin-bottom: 14px;
 }
 
-.modal-head h3,
-.modal-card .card-head h2 {
+.modal-head h3 {
   margin: 0;
-  color: var(--ink);
 }
 
 .people-results,
 .selected-people,
-.break-type-grid,
-.break-grid {
+.break-type-grid {
   display: grid;
   gap: 8px;
 }
@@ -2108,27 +2091,10 @@ body[data-view="calendar"] .pulse-suite-nav.glass-panel {
 .person-result,
 .selected-people button,
 .break-type-card {
-  min-height: 72px;
-  padding: 14px;
+  min-height: 44px;
   border-radius: 12px;
-  background: var(--teal);
-  color: #fff;
-  border-color: rgba(0, 106, 111, 0.22);
-  text-align: left;
-}
-
-.break-type-card small {
-  color: rgba(255, 255, 255, 0.78);
-}
-
-.modal-card > button:not(.primary-action),
-.modal-card .card-head button {
-  min-height: 38px;
-  padding: 8px 12px;
-  border-radius: 10px;
   background: var(--surface-soft);
-  color: var(--ink);
-  border-color: var(--line);
+  text-align: left;
 }
 
 .person-result.selected {
