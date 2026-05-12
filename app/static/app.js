@@ -399,6 +399,7 @@ const addDepartmentButton = document.querySelector("#addDepartmentButton");
 const employeeRoleInput = document.querySelector("#employeeRoleInput");
 const employeeManagerInput = document.querySelector("#employeeManagerInput");
 const employeeAdminRows = document.querySelector("#employeeAdminRows");
+const employeeCredentialNotice = document.querySelector("#employeeCredentialNotice");
 const newEmployeeButton = document.querySelector("#newEmployeeButton");
 const resetEmployeeFormButton = document.querySelector("#resetEmployeeFormButton");
 const rolesAccessPanel = document.querySelector("#rolesAccessPanel");
@@ -2288,6 +2289,8 @@ function resetEmployeeForm() {
   employeeAdminForm?.reset();
   if (employeeRecordId) employeeRecordId.value = "";
   if (employeeEmailInput) employeeEmailInput.disabled = false;
+  employeeCredentialNotice?.classList.add("hidden");
+  if (employeeCredentialNotice) employeeCredentialNotice.innerHTML = "";
   renderDepartmentOptions();
   renderProjectLocationOptions();
   if (employeeMobileInput) employeeMobileInput.value = "";
@@ -2301,6 +2304,19 @@ function resetEmployeeForm() {
   if (employeeRoleInput) employeeRoleInput.value = "Employee";
   if (employeeManagerInput) employeeManagerInput.value = "";
 }
+
+function showEmployeeCredentialNotice({ name, email, password }) {
+  if (!employeeCredentialNotice) return;
+  employeeCredentialNotice.classList.remove("hidden");
+  employeeCredentialNotice.innerHTML = `
+    <strong>Employee created successfully.</strong>
+    <span>Name: <b>${escapeHtml(name)}</b></span>
+    <span>Login email: <code>${escapeHtml(email)}</code></span>
+    <span>Temporary password: <code>${escapeHtml(password)}</code></span>
+    <small>Share this password with the employee for first login. They will be asked to change it.</small>
+  `;
+}
+
 function renderEmployeeAdmin() {
   if (!employeeAdminRows) return;
   employeeAdminRows.innerHTML = adminEmployees
@@ -3582,6 +3598,7 @@ async function submitEmployeeAdmin(event) {
       recordAudit("Employee", `Updated employee record for ${name}`);
       showToast("Employee updated.");
     } else {
+      const temporaryPassword = "Welcome@123";
       const created = await fetchJson("/api/v1/employees", {
         method: "POST",
         body: JSON.stringify({
@@ -3593,15 +3610,24 @@ async function submitEmployeeAdmin(event) {
           department_id: departmentId,
           reports_to_id: reportsToId,
           role,
-          password: "Welcome@123",
+          password: temporaryPassword,
         }),
       });
       recordAudit("Employee", `Created employee ${name} (${created.employee_code})`);
-      showToast(`Employee created. Login: ${email} / Welcome@123`);
+      showEmployeeCredentialNotice({ name, email, password: temporaryPassword });
+      showToast(`Employee created. Login: ${email} / Temporary password: ${temporaryPassword}`);
     }
 
     await loadAdminDataFromApi();
-    resetEmployeeForm();
+    if (employeeRecordId?.value) resetEmployeeForm();
+    else {
+      employeeAdminForm?.reset();
+      if (employeeJobTitleInput) employeeJobTitleInput.value = "Employee";
+      if (employeeEmploymentTypeInput) employeeEmploymentTypeInput.value = "Full-time";
+      if (employeeJoinDateInput) employeeJoinDateInput.value = todayInputValue();
+      if (employeeRoleInput) employeeRoleInput.value = "Employee";
+      if (employeeManagerInput) employeeManagerInput.value = "";
+    }
     renderDepartmentOptions();
     renderProjectLocationOptions();
     renderEmployeeManagerOptions();

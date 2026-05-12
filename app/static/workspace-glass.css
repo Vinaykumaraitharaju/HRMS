@@ -22,7 +22,7 @@
   --radius: 18px;
   --radius-sm: 12px;
   --sidebar-closed-space: 112px;
-  --sidebar-open-space: 354px;
+  --sidebar-open-space: 318px;
   font-family: Inter, "Segoe UI", Arial, sans-serif;
 }
 
@@ -142,7 +142,7 @@ a,
 .app-shell {
   min-height: 100vh;
   height: 100vh;
-  padding: 18px 18px 18px var(--sidebar-closed-space);
+  padding: 10px 12px 10px var(--sidebar-closed-space);
   transition: padding-left 180ms ease;
 }
 
@@ -153,9 +153,9 @@ a,
 .main-content {
   min-width: 0;
   min-height: 0;
-  height: calc(100vh - 36px);
+  height: calc(100vh - 20px);
   overflow: auto;
-  padding: 0 0 24px;
+  padding: 0 0 10px;
   position: relative;
 }
 
@@ -179,10 +179,10 @@ a,
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  min-height: 72px;
-  margin-bottom: 16px;
-  padding: 10px 12px;
+  gap: 10px;
+  min-height: 58px;
+  margin-bottom: 10px;
+  padding: 6px 10px;
   border-radius: 20px;
   background: var(--surface);
   border: 1px solid var(--line);
@@ -252,8 +252,8 @@ body.dark-mode .top-search input {
 }
 
 .icon-button {
-  width: 44px;
-  height: 44px;
+  width: 38px;
+  height: 38px;
   border-radius: 14px;
   background: var(--surface);
   color: var(--ink);
@@ -368,8 +368,8 @@ body.dark-mode .top-search input {
 .profile-button {
   display: flex;
   align-items: center;
-  min-height: 52px;
-  min-width: 230px;
+  min-height: 44px;
+  min-width: 210px;
   gap: 10px;
   padding: 6px 13px 6px 6px;
   border-radius: 18px;
@@ -397,8 +397,8 @@ body.dark-mode .top-search input {
 .message-avatar {
   display: grid;
   place-items: center;
-  width: 42px;
-  height: 42px;
+  width: 36px;
+  height: 36px;
   border-radius: 14px;
   background: var(--teal-soft);
   color: var(--teal);
@@ -612,11 +612,11 @@ body.dark-mode .top-search input {
 }
 
 .content-grid {
-  height: calc(100vh - 124px);
+  height: calc(100vh - 78px);
 }
 
 body[data-view="dashboard"] .content-grid {
-  height: calc(100vh - 36px);
+  height: calc(100vh - 20px);
 }
 
 .workspace-view {
@@ -633,11 +633,11 @@ body[data-view="calendar"] .workspace-view:not(.hidden) {
 
 .hero-dashboard {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 280px;
-  gap: 18px;
-  min-height: 310px;
-  padding: 62px 34px;
-  margin-bottom: 16px;
+  grid-template-columns: minmax(0, 1fr) 230px;
+  gap: 12px;
+  min-height: 180px;
+  padding: 28px 26px;
+  margin-bottom: 10px;
   border-radius: 22px;
   background: var(--teal);
   color: #fff;
@@ -652,7 +652,7 @@ body[data-view="calendar"] .workspace-view:not(.hidden) {
 .hero-dashboard h1 {
   max-width: 900px;
   margin: 4px 0 10px;
-  font-size: clamp(32px, 4vw, 58px);
+  font-size: clamp(28px, 3vw, 46px);
   line-height: 1.05;
 }
 
@@ -677,8 +677,8 @@ body[data-view="calendar"] .workspace-view:not(.hidden) {
   display: grid;
   align-content: center;
   gap: 8px;
-  min-height: 190px;
-  padding: 20px;
+  min-height: 132px;
+  padding: 14px;
   border-radius: 18px;
   background: var(--teal-2);
   color: #fff;
@@ -707,17 +707,22 @@ body[data-view="calendar"] .workspace-view:not(.hidden) {
 }
 
 .hero-card strong {
-  font-size: 34px;
+  font-size: 26px;
 }
 
 .dashboard-mosaic {
   display: grid;
-  grid-template-columns: minmax(320px, 1.1fr) minmax(280px, 0.9fr) minmax(280px, 0.9fr);
-  gap: 16px;
+  grid-template-columns: minmax(260px, 1.1fr) minmax(240px, 0.95fr) minmax(240px, 0.9fr);
+  gap: 10px;
+  align-items: stretch;
+  min-width: 0;
 }
 
 .dashboard-mosaic .glass-card {
-  min-height: 210px;
+  min-width: 0;
+  min-height: 0;
+  padding: 14px;
+  overflow: hidden;
   background: var(--teal-2);
   color: #fff;
   border-color: rgba(255, 255, 255, 0.12);
@@ -725,7 +730,7 @@ body[data-view="calendar"] .workspace-view:not(.hidden) {
 
 .announcements-card {
   grid-column: 1 / span 2;
-  min-height: 220px;
+  min-height: 150px;
 }
 
 .announcements {
@@ -762,7 +767,7 @@ body[data-view="calendar"] .workspace-view:not(.hidden) {
 
 .session-strip {
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  margin: 14px 0;
+  margin: 10px 0;
 }
 
 .session-strip > div,
@@ -775,6 +780,10 @@ body[data-view="calendar"] .workspace-view:not(.hidden) {
   border: 1px solid rgba(255, 255, 255, 0.13);
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.09);
+}
+
+.session-strip > div {
+  min-width: 0;
 }
 
 .quick-actions {
@@ -826,9 +835,24 @@ body[data-view="calendar"] .workspace-view:not(.hidden) {
 
 .leave-legend {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
   gap: 8px;
-  margin: 12px 0;
+  margin: 10px 0;
+}
+
+.leave-card {
+  overflow-x: hidden !important;
+}
+
+.leave-card .compact-table {
+  min-width: 0;
+  table-layout: fixed;
+}
+
+.leave-card .compact-table td {
+  padding: 10px 8px;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .leave-legend span {
@@ -1061,10 +1085,39 @@ label {
   background: var(--surface);
 }
 
+.credential-notice {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0;
+  padding: 14px 16px;
+  border: 1px solid rgba(0, 106, 111, 0.22);
+  border-radius: 14px;
+  background: var(--teal-soft);
+  color: var(--ink);
+}
+
+.credential-notice strong {
+  color: var(--teal);
+  font-size: 16px;
+}
+
+.credential-notice code {
+  display: inline-block;
+  padding: 3px 7px;
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 900;
+}
+
+.credential-notice small {
+  color: var(--muted);
+}
+
 .compact-table,
 .leave-request-table {
   width: 100%;
-  min-width: 620px;
+  min-width: min(620px, 100%);
   border-collapse: collapse;
 }
 
