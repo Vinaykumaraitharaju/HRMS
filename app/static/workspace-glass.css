@@ -1646,13 +1646,53 @@ body[data-view="profile"] .workspace-view:not(.hidden) {
 }
 
 .leave-balance-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 10px;
+  align-items: start;
   min-width: 0;
   overflow: hidden;
+  padding: 12px;
+  border-radius: 14px;
 }
 
-.leave-balance-item strong,
+.leave-balance-item strong {
+  min-width: 0;
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.leave-balance-item span {
+  color: var(--teal);
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1;
+}
+
 .leave-balance-item small {
+  grid-column: 1 / -1;
   overflow-wrap: anywhere;
+  color: var(--muted);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.selection-summary > div {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-height: 36px;
+  padding: 8px 12px;
+}
+
+.selection-summary small {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.selection-summary span {
+  color: var(--ink);
+  font-weight: 700;
 }
 
 .leave-view .leave-request-table {
@@ -1664,6 +1704,7 @@ body[data-view="profile"] .workspace-view:not(.hidden) {
 .leave-view .leave-request-table td {
   padding: 10px 8px;
   white-space: normal;
+  vertical-align: middle;
 }
 
 .leave-view .leave-request-table th:nth-child(1),
@@ -1702,11 +1743,31 @@ body[data-view="profile"] .workspace-view:not(.hidden) {
   padding-inline: 8px;
 }
 
+.leave-type-cell {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.leave-type-cell strong,
+.leave-type-cell small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.leave-type-cell small {
+  color: var(--muted);
+  font-weight: 600;
+}
+
 #leaveCalendarGrid {
   gap: 8px;
 }
 
 #leaveCalendarGrid button {
+  display: grid;
+  align-content: start;
+  gap: 4px;
   min-height: 58px;
   overflow: hidden;
 }
@@ -1714,9 +1775,40 @@ body[data-view="profile"] .workspace-view:not(.hidden) {
 #leaveCalendarGrid button small {
   display: block;
   max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow: visible;
   white-space: nowrap;
+  color: currentColor;
+  font-weight: 600;
+}
+
+#leaveCalendarGrid button.weekend {
+  background: #f3f6f8;
+  color: #667085;
+  border-color: rgba(102, 112, 133, 0.18);
+}
+
+#leaveCalendarGrid button.holiday {
+  background: #e6f2ff;
+  color: #0d5f8f;
+  border-color: rgba(13, 95, 143, 0.2);
+}
+
+#leaveCalendarGrid button.leave-pending {
+  background: #fff5df;
+  color: #986200;
+  border-color: rgba(152, 98, 0, 0.22);
+}
+
+#leaveCalendarGrid button.leave-approved {
+  background: #e6f7ef;
+  color: #16835b;
+  border-color: rgba(22, 131, 91, 0.22);
+}
+
+#leaveCalendarGrid button.leave-revoked {
+  background: #fff0f2;
+  color: #b4233a;
+  border-color: rgba(180, 35, 58, 0.22);
 }
 
 .profile-grid {

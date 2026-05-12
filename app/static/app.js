@@ -5291,6 +5291,16 @@ function formatLeaveRequestId(item = {}) {
   return `WVL-LV-${requestYear}-${paddedId}`;
 }
 
+function leaveCalendarTag(request, holiday, dateText) {
+  if (request?.status === "Approved") return request.leaveId || "Approved";
+  if (request?.status?.startsWith("Pending")) return "Pending";
+  if (request?.status?.startsWith("Revoke Pending")) return "Revoke pending";
+  if (request?.status === "Revoked") return "Revoked";
+  if (holiday) return holiday.name || "Holiday";
+  if (isWeekend(dateText)) return "Weekend";
+  return "";
+}
+
 function renderLeaveWorkspace() {
   if (!leaveRequestList || !leaveBalanceGrid) return;
   renderLeaveTypeOptions();
@@ -5305,11 +5315,11 @@ function renderLeaveWorkspace() {
     leaveSelectionSummary.innerHTML = `
       <div>
         <small>Selected range</small>
-        <strong>${selectedStart ? formatDateText(selectedStart, { month: "short", day: "numeric" }) : "Start date"}${selectedEnd ? ` - ${formatDateText(selectedEnd, { month: "short", day: "numeric" })}` : ""}</strong>
+        <span>${selectedStart ? formatDateText(selectedStart, { month: "short", day: "numeric" }) : "Start date"}${selectedEnd ? ` - ${formatDateText(selectedEnd, { month: "short", day: "numeric" })}` : ""}</span>
       </div>
       <div>
         <small>Leave days</small>
-        <strong>${selectedDays || "--"}</strong>
+        <span>${selectedDays || "--"}</span>
       </div>`;
   }
   leaveBalanceGrid.innerHTML = [
@@ -5321,8 +5331,8 @@ function renderLeaveWorkspace() {
     ["Pending", pendingDays, "days in approval"],
   ].map(([label, value, note]) => `
     <div class="leave-balance-item">
-      <small>${label}</small>
-      <strong>${value}</strong>
+      <strong>${label}</strong>
+      <span>${value}</span>
       <small>${note}</small>
     </div>`).join("");
 
@@ -5356,7 +5366,7 @@ function renderLeaveWorkspace() {
     .sort((a, b) => safeText(b?.start).localeCompare(safeText(a?.start)))
     .map((request) => `
       <tr>
-        <td><strong>${request?.type || "Leave"}</strong><small>${request?.leaveId || ""}</small></td>
+        <td><div class="leave-type-cell"><strong>${request?.type || "Leave"}</strong><small>${request?.leaveId || ""}</small></div></td>
         <td>${formatDateText(request?.start, { month: "short", day: "numeric" })} - ${formatDateText(request?.end, { month: "short", day: "numeric" })}</td>
         <td>${request?.days || 0}</td>
         <td>${request?.reason || ""}</td>
@@ -5400,19 +5410,7 @@ function renderLeaveWorkspace() {
       holiday ? "holiday" : "",
       isWeekend(dateText) && !holiday ? "weekend" : "",
     ].join(" ");
-    const tag = request?.status === "Approved"
-      ? request.leaveId
-      : request?.status?.startsWith("Pending")
-        ? "Pending"
-        : request?.status?.startsWith("Revoke Pending")
-          ? "Revoke pending"
-          : request?.status === "Revoked"
-            ? "Revoked"
-            : holiday
-              ? holiday.name
-              : isWeekend(dateText)
-                ? "Weekend"
-                : "";
+    const tag = leaveCalendarTag(request, holiday, dateText);
     calendarCells.push(`<button class="${classes}" type="button" data-leave-date="${dateText}"><b>${day}</b>${tag ? `<small>${tag}</small>` : ""}</button>`);
   }
   leaveCalendarGrid.innerHTML = calendarCells.join("");
