@@ -4385,20 +4385,23 @@ function filterTeamStatusEmployees(employees) {
 }
 
 function teamStatusForEmployee(employee, index) {
-  const roster = [
-    { session: "Logged in", mode: "Office", breakStatus: "No active break", presence: "Online", className: "approved", updated: "Now" },
-    { session: "Logged in", mode: "Home", breakStatus: "Tea break active", presence: "Away", className: "pending", updated: "6 min ago" },
-    { session: "Logged in", mode: "Office", breakStatus: "No active break", presence: "Meeting", className: "timesheet", updated: "11 min ago" },
-    { session: "Logged out", mode: "Office", breakStatus: "Shift completed", presence: "Offline", className: "revoked", updated: "32 min ago" },
-    { session: "Logged in", mode: "Home", breakStatus: "Lunch break active", presence: "Presentation", className: "access", updated: "18 min ago" },
-  ];
-  const status = roster[index % roster.length];
-  if (employee.name === currentRoleProfile.name) {
+  const employeeUserId = Number(employee?.raw?.id || employee?.id || 0);
+  const currentEmployeeId = Number(window.currentUser?.employee_id || 0);
+  const isCurrentEmployee =
+    currentEmployeeId && employeeUserId === currentEmployeeId
+    || safeText(employee?.email).toLowerCase() === safeText(window.currentUser?.email).toLowerCase();
+
+  if (isCurrentEmployee) {
     const overrun = currentBreakOverrun();
     const breakLabel = formatBreakType();
+    const lastUpdate = attendanceState.activeBreakType
+      ? attendanceState.breakStartedAt
+      : attendanceState.loggedIn
+        ? attendanceState.loginAt
+        : attendanceState.logoutAt;
     return {
       session: attendanceState.loggedIn ? "Logged in" : "Logged out",
-      mode: attendanceState.wfhStatus === "approved" ? "Home" : "Office",
+      mode: attendanceState.locationStatus === "office" ? "Office" : attendanceState.locationStatus === "outside" ? "WFH / outside" : "Pending",
       breakStatus: overrun
         ? `${breakLabel} break exceeded by ${overrun.overBy} min`
         : attendanceState.activeBreakType
@@ -4406,10 +4409,18 @@ function teamStatusForEmployee(employee, index) {
           : "No active break",
       presence: attendanceState.activeBreakType ? "Away" : attendanceState.loggedIn ? "Online" : "Offline",
       className: overrun ? "rejected" : attendanceState.loggedIn ? "approved" : "revoked",
-      updated: attendanceState.loggedIn ? "Now" : attendanceState.logoutAt ? currentTimeLabel(attendanceState.logoutAt) : "Not started",
+      updated: lastUpdate ? currentTimeLabel(lastUpdate) : "No attendance yet",
     };
   }
-  return status;
+
+  return {
+    session: "No record",
+    mode: "Not available",
+    breakStatus: "Not available",
+    presence: "No data",
+    className: "no-record",
+    updated: "No attendance data",
+  };
 }
 
 function renderTeamStatusBoard() {
@@ -4918,9 +4929,8 @@ function renderTimesheetWorkspace() {
       ].join(" ");
       return `
       <button class="timesheet-day ${classes}" type="button" data-timesheet-date="${dateText}">
-        <small>${formatDateText(dateText, { weekday: "short" })}</small>
-        <strong>${formatDateText(dateText, { day: "numeric", month: "short" })}</strong>
-        <small>${entry ? `${safeNumber(entry?.hours, 0)}h logged` : "0h"}</small>
+        <span class="timesheet-day-line"><small>${formatDateText(dateText, { weekday: "short" })}</small><strong>${formatDateText(dateText, { day: "numeric", month: "short" })}</strong><em>${entry ? `${safeNumber(entry?.hours, 0)}h` : "0h"}</em></span>
+        <small>${entry ? "logged" : "not logged"}</small>
       </button>`;
     }).join("");
   }
@@ -4938,11 +4948,11 @@ function renderTimesheetWorkspace() {
             : "Manual draft";
   timesheetDayState?.classList.toggle("muted", selectedEntry?.source !== "leave");
   timesheetDetailCard.innerHTML = `
-    ${selectedHoliday ? `<div class="timesheet-metric holiday-detail"><small>Public Holiday</small><strong>${selectedHoliday?.name || "Holiday"}</strong></div>` : ""}
-    <div class="timesheet-metric status-message"><small>Status</small><strong>${timesheetStatusMessage(selectedEntry, selectedLeave, selectedHoliday)}</strong></div>
-    <div class="timesheet-metric"><small>Hours</small><strong>${safeNumber(selectedEntry?.hours, 0)}h</strong></div>
-    <div class="timesheet-metric"><small>Task</small><strong>${selectedTaskLabel}</strong></div>
-    ${selectedLeave ? `<div class="timesheet-metric"><small>Leave ID</small><strong>${selectedLeave.leaveId}</strong></div>` : ""}
+    ${selectedHoliday ? `<div class="timesheet-metric holiday-detail"><small>Public Holiday</small><span>${selectedHoliday?.name || "Holiday"}</span></div>` : ""}
+    <div class="timesheet-metric status-message"><small>Status</small><span>${timesheetStatusMessage(selectedEntry, selectedLeave, selectedHoliday)}</span></div>
+    <div class="timesheet-metric"><small>Hours</small><span>${safeNumber(selectedEntry?.hours, 0)}h</span></div>
+    <div class="timesheet-metric"><small>Task</small><span>${selectedTaskLabel}</span></div>
+    ${selectedLeave ? `<div class="timesheet-metric"><small>Leave ID</small><span>${selectedLeave.leaveId}</span></div>` : ""}
   `;
   timesheetTask.value = selectedEntry?.task || "";
   timesheetHours.value = selectedEntry?.hours ?? "";
@@ -4959,19 +4969,19 @@ function renderTimesheetWorkspace() {
   timesheetSummaryList.innerHTML = `
     <div class="timesheet-summary-row">
       <small>Weekly total</small>
-      <strong>${total}h</strong>
+      <span>${total}h</span>
     </div>
     <div class="timesheet-summary-row">
       <small>Entries completed</small>
-      <strong>${week.filter((dateText) => safeNumber(derivedTimesheetEntry(dateText)?.hours, 0) > 0).length}/7</strong>
+      <span>${week.filter((dateText) => safeNumber(derivedTimesheetEntry(dateText)?.hours, 0) > 0).length}/7</span>
     </div>
     <div class="timesheet-summary-row">
       <small>Entry rule</small>
-      <strong>Manual entry required</strong>
+      <span>Manual entry required</span>
     </div>
     <div class="timesheet-summary-row">
       <small>Work mode</small>
-      <strong>${attendanceState.locationStatus === "office" ? "Office" : attendanceState.wfhStatus === "approved" ? "WFH" : "Pending"}</strong>
+      <span>${attendanceState.locationStatus === "office" ? "Office" : attendanceState.wfhStatus === "approved" ? "WFH" : "Pending"}</span>
     </div>
   `;
 
@@ -4997,11 +5007,11 @@ function renderTimesheetWorkspace() {
       !editState.editable ? "locked" : "",
     ].join(" ");
     const subLabel = leave?.status === "Approved"
-      ? leave.leaveId
+      ? `${leave.leaveId || "Leave"} · ${safeNumber(entry?.hours, 0)}h`
       : leave?.status?.startsWith("Pending")
-        ? "Pending"
+        ? `${leave.leaveId || "Leave"} · Pending`
         : leave?.status?.startsWith("Revoke Pending")
-          ? "Revoke pending"
+          ? `${leave.leaveId || "Leave"} · Revoke pending`
           : holiday
             ? holiday?.type === "optional" ? "Optional" : "Holiday"
             : entry

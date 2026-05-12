@@ -1345,6 +1345,11 @@ label {
   color: #986200;
 }
 
+.status.no-record {
+  background: var(--surface-tint);
+  color: var(--muted);
+}
+
 .status.rejected,
 .status.revoked,
 .status.revoke-pending {
@@ -1380,6 +1385,49 @@ label {
   text-align: left;
 }
 
+.timesheet-day {
+  display: grid;
+  align-content: start;
+  gap: 5px;
+}
+
+.timesheet-day-line {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.timesheet-day-line small,
+.timesheet-day-line strong,
+.timesheet-day-line em {
+  min-width: 0;
+  font-style: normal;
+  line-height: 1.2;
+}
+
+.timesheet-day-line small {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.timesheet-day-line strong {
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.timesheet-day-line em {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.timesheet-day.active .timesheet-day-line em,
+.timesheet-day.active > small {
+  color: rgba(255, 255, 255, 0.82);
+}
+
 .timesheet-day.active,
 .timesheet-day.selected,
 .mini-calendar button.active,
@@ -1396,6 +1444,40 @@ label {
 .selection-summary {
   display: grid;
   gap: 12px;
+}
+
+.timesheet-detail {
+  gap: 8px;
+}
+
+.timesheet-metric,
+.timesheet-summary-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-start;
+  gap: 4px;
+  min-width: 0;
+  padding: 8px 10px;
+}
+
+.timesheet-metric small,
+.timesheet-summary-row small {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-weight: 500;
+  text-transform: none;
+}
+
+.timesheet-metric span,
+.timesheet-summary-row span {
+  min-width: 0;
+  color: var(--ink);
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.timesheet-metric.status-message span {
+  font-weight: 600;
 }
 
 .leave-balance-grid {
