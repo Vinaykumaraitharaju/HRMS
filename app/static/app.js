@@ -1856,12 +1856,20 @@ function profilePhotoStorageKey() {
   return `hrms_profile_photo:${userKey}`;
 }
 
-function resetProfilePhotoAvatar(avatar, label = currentRoleProfile.label) {
+function resetProfilePhotoAvatar(avatar, label = "") {
   if (!avatar) return;
   avatar.style.backgroundImage = "";
   avatar.dataset.photoSrc = "";
   avatar.classList.remove("has-photo");
-  avatar.textContent = String(label || "U").slice(0, 1).toUpperCase();
+  const fallback =
+    label ||
+    window.currentUser?.name ||
+    window.currentUser?.full_name ||
+    window.currentUser?.email ||
+    currentRoleProfile.name ||
+    currentRoleProfile.label ||
+    "U";
+  avatar.textContent = safeInitials(fallback, "U").slice(0, 2);
 }
 
 function applyProfilePhoto(src) {
@@ -1943,7 +1951,7 @@ function applyRoleWorkspace() {
   if (welcomeTitle) welcomeTitle.textContent = currentRoleProfile.headline;
   if (welcomeNote) welcomeNote.textContent = currentRoleProfile.note;
   if (profileHeaderAvatar && !profileHeaderAvatar.classList.contains("has-photo")) {
-    profileHeaderAvatar.textContent = currentRoleProfile.label.slice(0, 1);
+    resetProfilePhotoAvatar(profileHeaderAvatar);
   }
 }
 
@@ -3984,6 +3992,38 @@ function handleQuickAction(action) {
   if (action === "leave") {
     navigateToView("leave", "leaveView", "Apply Leave");
   }
+}
+
+function openAssistShortcut() {
+  navigateToView("chat", "chatView", "Chat");
+  renderChatWorkspace();
+
+  if (!activeConversationId && conversations.length) {
+    const firstConversation = conversations[0];
+    activeConversationId = String(firstConversation.id);
+    activeRecipientId = Number(firstConversation.user_id || firstConversation.employee_id || firstConversation.id);
+    renderChatList();
+    renderThread();
+    renderConversationMeta();
+  }
+
+  if (chatMessage) {
+    if (!chatMessage.value.trim()) chatMessage.value = "Hi, I need help with ";
+    chatMessage.focus();
+    chatMessage.setSelectionRange(chatMessage.value.length, chatMessage.value.length);
+  }
+
+  showToast("Assist opened in chat.");
+}
+
+function openGuideShortcut() {
+  navigateToView("activity", "activityView", "Activity");
+  activeActivityFilter = "All";
+  activityFilters?.querySelectorAll("[data-activity-filter]").forEach((button) => {
+    button.classList.toggle("active", button.dataset.activityFilter === "All");
+  });
+  renderActivityFeed();
+  showToast("Guide opened activity updates.");
 }
 
 function autoAttendanceLogin() {
@@ -7139,7 +7179,18 @@ function bindInteractions() {
   });
 
   document.querySelectorAll(".rail-shortcuts button").forEach((button) => {
-    button.addEventListener("click", () => showToast(`${button.textContent} opened.`));
+    button.addEventListener("click", () => {
+      const label = button.textContent.toLowerCase();
+      if (label.includes("assist")) {
+        openAssistShortcut();
+        return;
+      }
+      if (label.includes("guide")) {
+        openGuideShortcut();
+        return;
+      }
+      showToast(`${button.textContent} opened.`);
+    });
   });
 
   logoutButton?.addEventListener("click", () => {

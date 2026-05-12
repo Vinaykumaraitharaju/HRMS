@@ -405,19 +405,29 @@ body.dark-mode .top-search input {
   font-weight: 900;
 }
 
+.profile-button .avatar.has-photo,
+.profile-photo.has-photo {
+  background-color: var(--surface-soft);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  color: transparent;
+  overflow: hidden;
+}
+
 .logout-button {
   display: none;
 }
 
 .sidebar {
   position: fixed;
-  top: 96px;
+  top: 58px;
   left: 22px;
   z-index: 65;
   display: flex;
   flex-direction: column;
   width: 74px;
-  height: calc(100vh - 118px);
+  height: calc(100vh - 80px);
   padding: 18px 14px;
   overflow: visible;
   border-radius: 24px;
@@ -445,8 +455,8 @@ body.dark-mode .top-search input {
 
 .sidebar-toggle {
   position: fixed;
-  top: 84px;
-  left: 4px;
+  top: 18px;
+  left: 12px;
   z-index: 10000;
   display: inline-flex;
   align-items: center;
@@ -462,7 +472,7 @@ body.dark-mode .top-search input {
 
 .sidebar.is-open .sidebar-toggle,
 .app-shell.sidebar-open .sidebar-toggle {
-  left: 4px;
+  left: 12px;
 }
 
 .sidebar-toggle span,
@@ -505,6 +515,11 @@ body.dark-mode .top-search input {
   border: 1px solid var(--line);
   border-radius: 16px;
   background: var(--surface-soft);
+}
+
+.side-showcase,
+.side-status-card {
+  display: none !important;
 }
 
 .sidebar-brand {
@@ -1222,6 +1237,62 @@ label {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+#teamStatusSection .table-scroll {
+  overflow-x: auto;
+}
+
+#teamStatusSection .compact-table {
+  min-width: 980px;
+  table-layout: fixed;
+}
+
+#teamStatusSection .compact-table th:nth-child(1),
+#teamStatusSection .compact-table td:nth-child(1) {
+  width: 90px;
+}
+
+#teamStatusSection .compact-table th:nth-child(2),
+#teamStatusSection .compact-table td:nth-child(2) {
+  width: 380px;
+}
+
+#teamStatusSection .compact-table th:nth-child(3),
+#teamStatusSection .compact-table td:nth-child(3),
+#teamStatusSection .compact-table th:nth-child(4),
+#teamStatusSection .compact-table td:nth-child(4),
+#teamStatusSection .compact-table th:nth-child(6),
+#teamStatusSection .compact-table td:nth-child(6),
+#teamStatusSection .compact-table th:nth-child(7),
+#teamStatusSection .compact-table td:nth-child(7) {
+  width: 130px;
+}
+
+#teamStatusSection .compact-table th:nth-child(5),
+#teamStatusSection .compact-table td:nth-child(5) {
+  width: 170px;
+}
+
+#teamStatusSection .team-member-cell {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-items: center;
+}
+
+#teamStatusSection .team-member-cell > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+#teamStatusSection .team-member-cell strong,
+#teamStatusSection .team-member-cell small {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .employee-id-pill,
@@ -2489,7 +2560,7 @@ body[data-view="calendar"] .pulse-suite-nav.glass-panel {
   }
 
   .sidebar {
-    top: 88px;
+    top: 66px;
     left: 12px;
     width: 58px;
     height: 58px;
@@ -2497,17 +2568,17 @@ body[data-view="calendar"] .pulse-suite-nav.glass-panel {
 
   .sidebar.is-open {
     width: min(320px, calc(100vw - 24px));
-    height: calc(100vh - 110px);
+    height: calc(100vh - 88px);
   }
 
   .sidebar-toggle {
-    top: 84px;
-    left: 4px;
+    top: 18px;
+    left: 12px;
   }
 
   .sidebar.is-open .sidebar-toggle,
   .app-shell.sidebar-open .sidebar-toggle {
-    left: 4px;
+    left: 12px;
   }
 
   .top-header,
