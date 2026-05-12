@@ -366,8 +366,8 @@ body[data-view="dashboard"] .top-header {
 
 .sidebar-toggle {
   position: fixed;
-  top: 204px;
-  left: 24px;
+  top: 84px;
+  left: 4px;
   z-index: 10000;
   display: inline-flex;
   align-items: center;
@@ -383,7 +383,7 @@ body[data-view="dashboard"] .top-header {
 
 .sidebar.is-open .sidebar-toggle,
 .app-shell.sidebar-open .sidebar-toggle {
-  left: 318px;
+  left: 4px;
 }
 
 .sidebar-toggle span,
@@ -1674,7 +1674,7 @@ body[data-view="calendar"] .pulse-suite-nav.glass-panel {
 .chat-input {
   display: grid;
   grid-template-columns: minmax(320px, 1fr) auto;
-  align-items: end;
+  align-items: center;
   gap: 12px;
   min-height: 78px;
   padding: 12px;
@@ -1684,6 +1684,8 @@ body[data-view="calendar"] .pulse-suite-nav.glass-panel {
 }
 
 .chat-input textarea#chatMessage {
+  grid-column: 1;
+  grid-row: 1;
   min-height: 54px;
   height: 54px;
   max-height: 84px;
@@ -1693,10 +1695,28 @@ body[data-view="calendar"] .pulse-suite-nav.glass-panel {
 }
 
 .composer-tools {
+  grid-column: 2;
+  grid-row: 1;
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
+}
+
+#mediaToggle {
+  display: none;
+}
+
+.emoji-picker button {
+  display: grid;
+  place-items: center;
+  min-width: 34px;
+  min-height: 34px;
+  padding: 6px;
+  border-radius: 10px;
+  background: var(--surface-soft);
+  font-size: 20px;
+  line-height: 1;
 }
 
 #sendChat {
@@ -1738,7 +1758,13 @@ body[data-view="calendar"] .pulse-suite-nav.glass-panel {
   grid-template-columns: repeat(8, 1fr);
 }
 
-.attachment-tray:not(.hidden) {
+.attachment-tray:empty {
+  display: none !important;
+}
+
+.attachment-tray:not(:empty):not(.hidden) {
+  grid-column: 1 / -1;
+  grid-row: 2;
   display: flex;
   gap: 10px;
   align-items: stretch;
@@ -2031,13 +2057,13 @@ body[data-view="calendar"] .pulse-suite-nav.glass-panel {
   }
 
   .sidebar-toggle {
-    top: 148px;
-    left: 18px;
+    top: 84px;
+    left: 4px;
   }
 
   .sidebar.is-open .sidebar-toggle,
   .app-shell.sidebar-open .sidebar-toggle {
-    left: min(292px, calc(100vw - 58px));
+    left: 4px;
   }
 
   .top-header,

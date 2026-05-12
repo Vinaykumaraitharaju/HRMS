@@ -672,7 +672,7 @@ const defaultScopedHolidays = [
   { country: "UK", location: "London", name: "Boxing Day Substitute", date: "2026-12-28", type: "public" },
 ];
 
-const emojiPalette = [":)", ":D", ";)", ":P", "<3", "+1", "ok", "done", "thanks", "idea", "pin", "ship"];
+const emojiPalette = ["😀", "😄", "😊", "😂", "😍", "👍", "👏", "🙏", "🎉", "🔥", "💡", "✅", "⭐", "📌", "🚀", "❤️"];
 
 function inferAttachmentKind(name = "", mimeType = "") {
   const lowerName = name.toLowerCase();
@@ -6111,8 +6111,8 @@ function renderEmojiPicker() {
 }
 
 function insertAtCursor(value) {
-  const start = chatMessage.selectionStart - chatMessage.value.length;
-  const end = chatMessage.selectionEnd - chatMessage.value.length;
+  const start = chatMessage.selectionStart ?? chatMessage.value.length;
+  const end = chatMessage.selectionEnd ?? chatMessage.value.length;
   chatMessage.value = `${chatMessage.value.slice(0, start)}${value}${chatMessage.value.slice(end)}`;
   const next = start + value.length;
   chatMessage.focus();
