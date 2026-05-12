@@ -4911,6 +4911,31 @@ function hydrateTimesheetState(state, options = {}) {
   }
 }
 
+function timesheetDayVisualState(dateText, entry, leave, holiday, today = localDateKey(new Date())) {
+  const hasHours = safeNumber(entry?.hours, 0) > 0;
+  const isPastWorkday = dateText < today && !isWeekend(dateText) && !holiday && !leave;
+
+  if (leave?.status === "Approved") {
+    return { className: "full-leave leave-approved", label: `FL - ${leave.leaveId || "Approved"}` };
+  }
+  if (leave?.status?.startsWith("Pending") || leave?.status?.startsWith("Revoke Pending")) {
+    return { className: "leave-pending", label: `${leave.leaveId || "Leave"} - Pending` };
+  }
+  if (holiday) {
+    return { className: "holiday", label: holiday?.type === "optional" ? "Optional holiday" : "Holiday" };
+  }
+  if (isWeekend(dateText)) {
+    return { className: "weekend", label: hasHours ? `${safeNumber(entry?.hours, 0)}h logged` : "Weekend" };
+  }
+  if (hasHours) {
+    return { className: "has-hours", label: `${safeNumber(entry?.hours, 0)}h logged` };
+  }
+  if (isPastWorkday) {
+    return { className: "missing-hours", label: "Missing hours" };
+  }
+  return { className: "not-logged", label: "Not logged" };
+}
+
 function renderTimesheetWorkspace() {
   if (!timesheetDetailCard || !timesheetMiniCalendar) return;
   const week = weekDates(selectedTimesheetDate);
@@ -4920,17 +4945,15 @@ function renderTimesheetWorkspace() {
       const entry = derivedTimesheetEntry(dateText);
       const holiday = holidayForDate(dateText);
       const leave = leaveForDate(dateText);
+      const visual = timesheetDayVisualState(dateText, entry, leave, holiday, today);
       const classes = [
         dateText === selectedTimesheetDate ? "active" : "",
-        holiday ? "holiday" : "",
-        isWeekend(dateText) && !holiday ? "weekend" : "",
-        leave?.status === "Approved" ? "leave-approved" : "",
-        (leave?.status?.startsWith("Pending") || leave?.status?.startsWith("Revoke Pending")) ? "leave-pending" : "",
+        visual.className,
       ].join(" ");
       return `
       <button class="timesheet-day ${classes}" type="button" data-timesheet-date="${dateText}">
-        <span class="timesheet-day-line"><small>${formatDateText(dateText, { weekday: "short" })}</small><strong>${formatDateText(dateText, { day: "numeric", month: "short" })}</strong><em>${entry ? `${safeNumber(entry?.hours, 0)}h` : "0h"}</em></span>
-        <small>${entry ? "logged" : "not logged"}</small>
+        <span class="timesheet-day-line"><small>${formatDateText(dateText, { weekday: "short" })}</small><strong>${formatDateText(dateText, { day: "numeric", month: "short" })}</strong></span>
+        <small>${visual.label}</small>
       </button>`;
     }).join("");
   }
@@ -4997,16 +5020,14 @@ function renderTimesheetWorkspace() {
     const leave = leaveForDate(date);
     const holiday = holidayForDate(date);
     const editState = timesheetEditState(date);
+    const visual = timesheetDayVisualState(date, entry, leave, holiday, today);
     const classes = [
       date === today ? "today" : "",
       date === selectedTimesheetDate ? "active" : "",
-      holiday ? "holiday" : "",
-      isWeekend(date) && !holiday ? "weekend" : "",
-      leave?.status === "Approved" ? "leave-approved" : "",
-      (leave?.status?.startsWith("Pending") || leave?.status?.startsWith("Revoke Pending")) ? "leave-pending" : "",
+      visual.className,
       !editState.editable ? "locked" : "",
     ].join(" ");
-    const subLabel = leave?.status === "Approved"
+    let subLabel = leave?.status === "Approved"
       ? `${leave.leaveId || "Leave"} · ${safeNumber(entry?.hours, 0)}h`
       : leave?.status?.startsWith("Pending")
         ? `${leave.leaveId || "Leave"} · Pending`
@@ -5017,9 +5038,10 @@ function renderTimesheetWorkspace() {
             : entry
               ? `${safeNumber(entry?.hours, 0)}h`
               : "0h";
+    subLabel = visual.label;
     cells.push(`<button class="${classes}" type="button" data-timesheet-date="${date}"><b>${day}</b><small>${subLabel}</small></button>`);
   }
-  timesheetMiniCalendar.innerHTML = `<div class="calendar-caption"><strong>${monthYear}</strong><small>Daily hours</small></div>${cells.join("")}`;
+  timesheetMiniCalendar.innerHTML = `<div class="calendar-caption"><strong>${monthYear}</strong><small>Hours / leave status</small></div>${cells.join("")}`;
 }
 
 function saveCurrentTimesheetEntry() {
