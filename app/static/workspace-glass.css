@@ -746,6 +746,16 @@ body[data-view="calendar"] .workspace-view:not(.hidden) {
   font-size: 20px;
 }
 
+.card-head {
+  min-width: 0;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.card-head > * {
+  min-width: 0;
+}
+
 .card-head span,
 .dashboard-mosaic small,
 .dashboard-mosaic p,
@@ -978,8 +988,8 @@ body[data-view="calendar"] .workspace-view:not(.hidden) {
   flex-direction: column;
   align-items: flex-start;
   gap: 8px;
-  margin-bottom: 16px;
-  padding: 26px;
+  margin-bottom: 12px;
+  padding: 22px;
   background: var(--teal);
   color: #fff;
   border: 0;
@@ -987,7 +997,7 @@ body[data-view="calendar"] .workspace-view:not(.hidden) {
 
 .page-heading h2 {
   color: #fff;
-  font-size: clamp(30px, 5vw, 56px);
+  font-size: clamp(30px, 4vw, 48px);
   line-height: 1.02;
 }
 
@@ -1004,10 +1014,12 @@ body[data-view="calendar"] .workspace-view:not(.hidden) {
 .compact-form {
   display: grid;
   gap: 12px;
+  min-width: 0;
 }
 
 .admin-form {
   grid-template-columns: repeat(3, minmax(180px, 1fr));
+  align-items: end;
 }
 
 .compact-form {
@@ -1020,11 +1032,12 @@ label {
   color: var(--muted);
   font-size: 12px;
   font-weight: 900;
+  min-width: 0;
 }
 
 .admin-insights {
   display: grid;
-  grid-template-columns: repeat(4, minmax(150px, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
   width: 100%;
   margin: 14px 0;
@@ -1032,12 +1045,31 @@ label {
 
 .admin-insights article {
   display: grid;
-  gap: 6px;
-  padding: 16px;
+  grid-template-columns: 54px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-items: center;
+  gap: 2px 12px;
+  min-height: 96px;
+  padding: 14px;
+  color: var(--ink);
 }
 
 .admin-insights strong {
-  font-size: 30px;
+  min-width: 0;
+  font-size: 26px;
+  line-height: 1;
+  overflow-wrap: anywhere;
+}
+
+.admin-insights small {
+  grid-column: 2;
+  color: var(--muted);
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.admin-insights span {
+  grid-row: 1 / span 2;
 }
 
 .admin-actions {
@@ -1075,6 +1107,42 @@ label {
 .admin-panel,
 .team-leave-row {
   margin-bottom: 16px;
+}
+
+.admin-panel {
+  overflow: hidden;
+}
+
+.admin-panel > form + form,
+.admin-panel .policy-list + form,
+.admin-panel .assignment-rule-list + form {
+  margin-top: 14px;
+}
+
+.admin-panel .form-actions {
+  justify-content: flex-start;
+}
+
+.admin-panel .inline-tools {
+  align-self: end;
+}
+
+.admin-panel .inline-tools input {
+  min-width: 0;
+}
+
+.admin-form label:has(input[type="checkbox"]) {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  align-self: center;
+  gap: 10px;
+  color: var(--ink);
+}
+
+.admin-form label:has(input[type="checkbox"]) input {
+  width: 18px;
+  height: 18px;
+  padding: 0;
 }
 
 .table-scroll {
@@ -1129,10 +1197,11 @@ label {
 .compact-table td,
 .leave-request-table th,
 .leave-request-table td {
-  padding: 14px 16px;
+  padding: 12px 14px;
   border-bottom: 1px solid rgba(16, 27, 79, 0.08);
   text-align: left;
   vertical-align: top;
+  overflow-wrap: anywhere;
 }
 
 .compact-table th,
@@ -1276,6 +1345,181 @@ label {
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 8px;
+}
+
+body[data-view="admin"] .workspace-view:not(.hidden),
+body[data-view="leave"] .workspace-view:not(.hidden),
+body[data-view="profile"] .workspace-view:not(.hidden) {
+  padding-left: 0;
+}
+
+.admin-view,
+.leave-view,
+.profile-view {
+  scrollbar-gutter: stable;
+}
+
+.admin-view .page-heading {
+  border-radius: 18px;
+}
+
+.admin-view .admin-actions button {
+  min-width: max-content;
+}
+
+.access-card,
+.assignment-rule-card,
+.policy-list-row,
+.holiday-policy-row {
+  min-width: 0;
+}
+
+.policy-list > * {
+  min-width: 0;
+}
+
+.policy-list > * strong {
+  margin-right: 6px;
+}
+
+.access-person,
+.rule-main {
+  min-width: 0;
+}
+
+.access-person > div,
+.rule-main > div,
+.holiday-policy-info > div {
+  min-width: 0;
+}
+
+.access-person strong,
+.access-person small,
+.rule-main strong,
+.rule-main small,
+.holiday-policy-info strong,
+.holiday-policy-info small {
+  overflow-wrap: anywhere;
+}
+
+.leave-view .workspace-two-col {
+  grid-template-columns: minmax(360px, 0.92fr) minmax(460px, 1.08fr);
+  align-items: start;
+}
+
+.leave-view .glass-card,
+.leave-view .form-card {
+  overflow: hidden;
+}
+
+.leave-view .form-actions {
+  margin-top: 4px;
+}
+
+.leave-balance-item {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.leave-balance-item strong,
+.leave-balance-item small {
+  overflow-wrap: anywhere;
+}
+
+.leave-view .leave-request-table {
+  min-width: 0;
+  table-layout: fixed;
+}
+
+.leave-view .leave-request-table th,
+.leave-view .leave-request-table td {
+  padding: 10px 8px;
+  white-space: normal;
+}
+
+.leave-view .leave-request-table th:nth-child(1),
+.leave-view .leave-request-table td:nth-child(1) {
+  width: 22%;
+}
+
+.leave-view .leave-request-table th:nth-child(2),
+.leave-view .leave-request-table td:nth-child(2) {
+  width: 19%;
+}
+
+.leave-view .leave-request-table th:nth-child(3),
+.leave-view .leave-request-table td:nth-child(3) {
+  width: 9%;
+}
+
+.leave-view .leave-request-table th:nth-child(4),
+.leave-view .leave-request-table td:nth-child(4) {
+  width: 22%;
+}
+
+.leave-view .leave-request-table th:nth-child(5),
+.leave-view .leave-request-table td:nth-child(5) {
+  width: 16%;
+}
+
+.leave-view .leave-request-table th:nth-child(6),
+.leave-view .leave-request-table td:nth-child(6) {
+  width: 12%;
+}
+
+.leave-view .revoke-leave-button {
+  min-width: 0;
+  width: 100%;
+  padding-inline: 8px;
+}
+
+#leaveCalendarGrid {
+  gap: 8px;
+}
+
+#leaveCalendarGrid button {
+  min-height: 58px;
+  overflow: hidden;
+}
+
+#leaveCalendarGrid button small {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-grid {
+  align-items: start;
+}
+
+.profile-grid > .glass-card:first-child {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  align-content: start;
+  gap: 12px;
+  min-height: 150px;
+}
+
+.profile-grid > .glass-card:first-child .profile-photo {
+  grid-row: 1 / span 2;
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+}
+
+.profile-grid > .glass-card:first-child .primary-action {
+  justify-self: start;
+}
+
+.profile-grid > .glass-card:first-child .profile-note {
+  align-self: center;
+}
+
+#profileSecurityCard {
+  grid-column: 1;
 }
 
 .activity-list {
