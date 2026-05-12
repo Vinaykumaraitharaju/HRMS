@@ -44,9 +44,26 @@ body {
 }
 
 body.dark-mode {
-  --bg: #eef8f8;
-  --surface: #ffffff;
-  --surface-soft: #f3fafb;
+  color-scheme: dark;
+  --bg: #071416;
+  --surface: #0f2225;
+  --surface-soft: #142c30;
+  --surface-tint: #17383b;
+  --ink: #eef8fb;
+  --ink-soft: #d8e8ed;
+  --muted: #9bb2ba;
+  --line: rgba(226, 244, 248, 0.14);
+  --line-strong: rgba(226, 244, 248, 0.24);
+  --teal: #20a3a5;
+  --teal-2: #0d7377;
+  --teal-3: #37b7b8;
+  --teal-soft: rgba(32, 163, 165, 0.16);
+  --blue: #7fc7ff;
+  --amber: #f3b554;
+  --rose: #ff6f87;
+  --green: #5dd79a;
+  --shadow: 0 18px 42px rgba(0, 0, 0, 0.36);
+  --shadow-soft: 0 10px 26px rgba(0, 0, 0, 0.26);
 }
 
 button,
@@ -83,6 +100,13 @@ textarea {
   color: var(--ink);
   padding: 11px 12px;
   outline: none;
+}
+
+body.dark-mode input,
+body.dark-mode select,
+body.dark-mode textarea {
+  background: #0b1b1e;
+  color: var(--ink);
 }
 
 textarea {
@@ -210,6 +234,14 @@ body[data-view="dashboard"] .top-header {
   background: transparent;
   padding: 4px 0;
   box-shadow: none;
+}
+
+body.dark-mode .top-search input {
+  background: transparent;
+}
+
+.history-button {
+  display: none !important;
 }
 
 .header-actions {
@@ -1291,6 +1323,11 @@ label {
   background: var(--surface-soft);
 }
 
+.teams-chat-rail .conversation-section {
+  padding: 0;
+  background: transparent;
+}
+
 .participant-option {
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
@@ -1526,6 +1563,25 @@ body[data-view="calendar"] .pulse-suite-nav.glass-panel {
   font-size: 12px;
 }
 
+.teams-chat-rail .chat-person {
+  background: rgba(255, 255, 255, 0.13);
+  color: #fff;
+}
+
+.teams-chat-rail .chat-person.active,
+.teams-chat-rail .chat-person:hover {
+  background: rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.38);
+}
+
+.teams-chat-rail .chat-person strong,
+.teams-chat-rail .chat-person span:not(.chat-avatar),
+.teams-chat-rail .chat-person small,
+.teams-chat-rail .chat-meta,
+.teams-chat-rail .chat-meta time {
+  color: #fff;
+}
+
 .chat-avatar.online,
 .chat-avatar.large.online {
   box-shadow: 0 0 0 3px rgba(22, 131, 91, 0.18);
@@ -1558,6 +1614,7 @@ body[data-view="calendar"] .pulse-suite-nav.glass-panel {
   min-height: 72px;
   padding-bottom: 14px;
   border-bottom: 1px solid var(--line);
+  position: relative;
 }
 
 .thread-header p {
@@ -1742,6 +1799,19 @@ body[data-view="calendar"] .pulse-suite-nav.glass-panel {
   border-radius: 14px;
   background: var(--surface);
   box-shadow: var(--shadow);
+}
+
+.profile-hover-card {
+  display: none;
+  top: calc(100% + 10px);
+  left: 0;
+  width: 260px;
+}
+
+#threadAvatar:hover + .profile-hover-card,
+#threadAvatar:focus-visible + .profile-hover-card,
+.profile-hover-card:hover {
+  display: grid;
 }
 
 .mention-picker,

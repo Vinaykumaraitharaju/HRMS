@@ -191,6 +191,9 @@ let currentRole = "employee";
 let currentRoleProfile = roleProfiles.employee;
 let teamLeaveRequests = [];
 document.body.dataset.view = "dashboard";
+if (localStorage.getItem("hrms_theme") === "dark") {
+  document.body.classList.add("dark-mode");
+}
 
 const stats = [
   ["Work Hours Today", "7h 35m", "Logged since 09:15 AM", "W", "blue"],
@@ -368,6 +371,14 @@ const passwordChangeRequiredNotice = document.querySelector("#passwordChangeRequ
 const saveProfileButton = document.querySelector("#saveProfileButton");
 const savePasswordButton = document.querySelector("#savePasswordButton");
 const themeToggle = document.querySelector("#themeToggle");
+function syncThemeToggleLabel() {
+  if (!themeToggle) return;
+  const isDark = document.body.classList.contains("dark-mode");
+  themeToggle.textContent = isDark ? "D" : "T";
+  themeToggle.setAttribute("aria-label", isDark ? "Switch to light theme" : "Switch to dark theme");
+  themeToggle.setAttribute("title", isDark ? "Dark theme" : "Light theme");
+}
+syncThemeToggleLabel();
 const employeeAdminPanel = document.querySelector("#employeeAdminPanel");
 const employeeAdminForm = document.querySelector("#employeeAdminForm");
 const employeeRecordId = document.querySelector("#employeeRecordId");
@@ -6856,7 +6867,9 @@ function bindInteractions() {
   savePasswordButton?.addEventListener("click", savePasswordChanges);
 
   themeToggle?.addEventListener("click", () => {
-    document.body.classList.toggle("dark-mode");
+    const isDark = document.body.classList.toggle("dark-mode");
+    localStorage.setItem("hrms_theme", isDark ? "dark" : "light");
+    syncThemeToggleLabel();
   });
 
   globalSearch?.addEventListener("input", () => {
