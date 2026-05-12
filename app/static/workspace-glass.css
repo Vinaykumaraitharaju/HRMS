@@ -7391,3 +7391,459 @@ body[data-view="dashboard"] .header-actions {
 .sidebar:not(.is-open) .sidebar-toggle {
   pointer-events: auto !important;
 }
+
+/* Wavelynk client theme: teal, white, and navy visual refresh only. */
+:root {
+  color-scheme: light;
+  --text: #111b4f;
+  --muted: #667085;
+  --soft: rgba(0, 106, 111, 0.1);
+  --panel: #ffffff;
+  --panel-strong: #f7fbfc;
+  --line: rgba(17, 27, 79, 0.1);
+  --accent: #006a6f;
+  --amber: #e8a03a;
+  --blue: #0d5f8f;
+  --rose: #d7435d;
+  --violet: #3550a5;
+  --mint: #dff5f3;
+  --gold: #f2c86b;
+  --shadow: 0 18px 42px rgba(16, 24, 40, 0.08);
+  --client-teal: #006a6f;
+  --client-teal-card: #1d7f82;
+  --client-teal-soft: #e5f4f3;
+  --client-navy: #101b4f;
+  --client-ink: #25345f;
+  --client-border: rgba(16, 27, 79, 0.1);
+}
+
+body {
+  color: var(--client-navy) !important;
+  background: #f7fbfc !important;
+}
+
+body::before,
+.ambient-bg,
+.ambient-bg::after,
+.hero-dashboard::before,
+.teams-layout::before,
+.glass-card::before,
+.page-heading::after,
+.sidebar::before,
+.sidebar::after,
+body[data-view="timesheet"] #timesheetView::before,
+body[data-view="leave"] #leaveView::before,
+body[data-view="calendar"] #calendarView::before,
+body[data-view="activity"] #activityView::before,
+body[data-view="profile"] #profileView::before,
+body[data-view="admin"] #adminView::before {
+  display: none !important;
+}
+
+.glass-panel,
+.glass-card,
+.dropdown-menu,
+.modal-card,
+.top-header,
+body:not([data-view="dashboard"]) .top-header,
+.hero-card,
+.stat-tile,
+.focus-ribbon,
+.table-scroll,
+.teams-layout,
+body[data-view="chat"] .teams-thread,
+body[data-view="chat"] .chat-input,
+.pulse-suite-nav.glass-panel,
+.profile-hover-card,
+.notification-dropdown,
+.profile-dropdown {
+  background: #ffffff !important;
+  border: 1px solid var(--client-border) !important;
+  box-shadow: 0 18px 42px rgba(16, 24, 40, 0.08) !important;
+  backdrop-filter: none !important;
+  color: var(--client-navy) !important;
+}
+
+.top-header {
+  border-radius: 0 !important;
+}
+
+body:not([data-view="dashboard"]) .top-header {
+  border-radius: 20px !important;
+}
+
+.top-search,
+input,
+select,
+textarea,
+body[data-view="timesheet"] input,
+body[data-view="timesheet"] textarea,
+body[data-view="leave"] input,
+body[data-view="leave"] textarea,
+body[data-view="leave"] select,
+body[data-view="profile"] input,
+body[data-view="admin"] input,
+body[data-view="admin"] select,
+body[data-view="admin"] textarea,
+body[data-view="calendar"] input,
+body[data-view="calendar"] select,
+body[data-view="calendar"] textarea,
+body[data-view="chat"] .chat-input textarea#chatMessage {
+  background: #f8fbfc !important;
+  border-color: rgba(16, 27, 79, 0.12) !important;
+  color: var(--client-navy) !important;
+  box-shadow: none !important;
+}
+
+.top-search input {
+  background: transparent !important;
+  color: var(--client-navy) !important;
+}
+
+.top-search span,
+.card-head span,
+.page-heading p,
+.welcome-note,
+.work-state,
+.presence,
+.stat-tile em,
+.compact-table td small,
+body[data-view="timesheet"] label,
+body[data-view="leave"] label,
+body[data-view="profile"] label,
+body[data-view="admin"] label,
+body[data-view="chat"] .thread-header p {
+  color: var(--muted) !important;
+}
+
+button,
+.primary-action,
+.session-action,
+.quick-action-card,
+.admin-actions button,
+.form-actions button,
+body[data-view="calendar"] .primary-action,
+body[data-view="profile"] .primary-action,
+body[data-view="admin"] .admin-actions button {
+  border-color: rgba(0, 106, 111, 0.18) !important;
+}
+
+.primary-action,
+.form-actions button,
+#sendChat,
+body[data-view="calendar"] .primary-action,
+body[data-view="profile"] .primary-action,
+body[data-view="admin"] .form-actions button {
+  background: var(--client-teal) !important;
+  color: #ffffff !important;
+  box-shadow: 0 12px 26px rgba(0, 106, 111, 0.18) !important;
+}
+
+.icon-button,
+.profile-button,
+.history-button,
+.sidebar-toggle,
+.composer-tools button,
+.call-controls button,
+#addPeople,
+#moreCall,
+.rail-filter button,
+.pulse-suite-nav.glass-panel button {
+  background: #ffffff !important;
+  color: var(--client-navy) !important;
+  border-color: rgba(16, 27, 79, 0.12) !important;
+  box-shadow: 0 10px 22px rgba(16, 24, 40, 0.08) !important;
+}
+
+.sidebar,
+.sidebar.is-open,
+.sidebar:hover,
+.sidebar:focus-within {
+  background: #ffffff !important;
+  border-color: rgba(16, 27, 79, 0.1) !important;
+  box-shadow: 0 18px 48px rgba(16, 24, 40, 0.14) !important;
+  backdrop-filter: none !important;
+}
+
+.sidebar:not(.is-open) {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.sidebar-brand,
+.side-showcase,
+.side-status-card,
+.rail-shortcuts button {
+  background: #f8fbfc !important;
+  border-color: rgba(16, 27, 79, 0.1) !important;
+  color: var(--client-navy) !important;
+  box-shadow: none !important;
+}
+
+.sidebar-brand b,
+.profile-photo,
+.profile-button .avatar,
+.chat-avatar,
+.employee-avatar,
+.team-avatar,
+.stat-tile > span,
+.pulse-suite-nav b,
+.teams-app-rail b,
+body[data-view="chat"] .chat-avatar.large,
+.message-avatar {
+  background: var(--client-teal-soft) !important;
+  color: var(--client-teal) !important;
+  border-color: rgba(0, 106, 111, 0.16) !important;
+}
+
+.nav-item,
+.pulse-suite-nav.glass-panel button {
+  color: var(--client-navy) !important;
+}
+
+.nav-item.active,
+.nav-item:hover,
+.pulse-suite-nav button.active,
+.teams-app-rail button.active,
+.rail-filter button.active,
+.thread-tabs button.active {
+  background: var(--client-teal) !important;
+  border-color: var(--client-teal) !important;
+  color: #ffffff !important;
+}
+
+.pulse-suite-nav button.active b,
+.teams-app-rail button.active b {
+  background: rgba(255, 255, 255, 0.2) !important;
+  color: #ffffff !important;
+}
+
+.hero-dashboard,
+.page-heading,
+body[data-view="admin"] .page-heading,
+body[data-view="timesheet"] .page-heading,
+body[data-view="leave"] .page-heading,
+body[data-view="calendar"] .page-heading,
+body[data-view="activity"] .page-heading,
+body[data-view="profile"] .page-heading,
+body[data-view="chat"] .teams-chat-rail {
+  background: var(--client-teal) !important;
+  color: #ffffff !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.hero-dashboard {
+  text-align: center !important;
+  align-items: center !important;
+  padding: 58px 34px !important;
+}
+
+.hero-dashboard > div:first-child {
+  justify-self: center !important;
+}
+
+.hero-dashboard h1 {
+  max-width: 900px !important;
+  font-size: clamp(32px, 4vw, 58px) !important;
+  line-height: 1.05 !important;
+}
+
+.hero-dashboard .eyebrow,
+.hero-dashboard .welcome-note,
+.page-heading p,
+body[data-view="admin"] .page-heading p,
+body[data-view="timesheet"] .page-heading span,
+body[data-view="leave"] .page-heading span,
+body[data-view="calendar"] .page-heading p,
+body[data-view="activity"] .page-heading p,
+body[data-view="profile"] .page-heading p {
+  color: rgba(255, 255, 255, 0.76) !important;
+}
+
+.page-heading h2,
+body[data-view="admin"] .page-heading h2,
+body[data-view="timesheet"] .page-heading h2,
+body[data-view="leave"] .page-heading h2,
+body[data-view="calendar"] .page-heading h2,
+body[data-view="activity"] .page-heading h2,
+body[data-view="profile"] .page-heading h2 {
+  color: #ffffff !important;
+}
+
+.hero-card,
+.dashboard-mosaic .glass-card,
+body[data-view="chat"] .teams-chat-rail {
+  background: var(--client-teal-card) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+  box-shadow: 0 18px 36px rgba(0, 83, 88, 0.16) !important;
+}
+
+.dashboard-mosaic .glass-card .card-head span,
+.dashboard-mosaic .glass-card small,
+.dashboard-mosaic .glass-card p,
+.dashboard-mosaic .timeline-row time,
+.dashboard-mosaic .compact-table td small,
+body[data-view="chat"] .teams-chat-rail small,
+body[data-view="chat"] .teams-chat-rail p,
+body[data-view="chat"] .chat-person small,
+body[data-view="chat"] .chat-meta,
+body[data-view="chat"] .chat-meta time,
+body[data-view="chat"] .chat-meta em {
+  color: rgba(255, 255, 255, 0.74) !important;
+}
+
+.session-strip > div,
+.session-action,
+.quick-action-card,
+.announcement,
+.leave-legend div,
+.timeline-row div,
+body[data-view="chat"] .chat-item,
+body[data-view="chat"] .chat-person,
+body[data-view="chat"] .rail-filter {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+}
+
+.stat-tile,
+.focus-ribbon,
+body[data-view="timesheet"] .glass-card,
+body[data-view="leave"] .glass-card,
+body[data-view="calendar"] .glass-card,
+body[data-view="activity"] .activity-item,
+body[data-view="profile"] .glass-card,
+body[data-view="admin"] .admin-panel,
+body[data-view="admin"] .admin-insights article,
+body[data-view="admin"] .policy-list > *,
+.meeting-card,
+.event-card,
+.calendar-cell,
+.timesheet-day,
+.leave-balance-item,
+.selection-summary > div,
+.timesheet-metric,
+.timesheet-summary-row {
+  background: #ffffff !important;
+  border-color: rgba(16, 27, 79, 0.1) !important;
+  color: var(--client-navy) !important;
+  box-shadow: 0 14px 32px rgba(16, 24, 40, 0.07) !important;
+}
+
+.admin-insights span,
+.activity-icon,
+.attachment-icon,
+.attachment-thumb {
+  background: var(--client-teal-soft) !important;
+  color: var(--client-teal) !important;
+}
+
+.table-scroll,
+.compact-table th,
+.leave-request-table th {
+  background: #f8fbfc !important;
+  color: var(--client-navy) !important;
+}
+
+.compact-table th,
+.compact-table td,
+.leave-request-table th,
+.leave-request-table td {
+  border-bottom-color: rgba(16, 27, 79, 0.08) !important;
+}
+
+.compact-table tbody tr:hover {
+  background: rgba(0, 106, 111, 0.06) !important;
+}
+
+.status,
+.employee-id-pill,
+.soft-chip,
+.project-chip,
+.location-chip,
+.role-chip {
+  background: var(--client-teal-soft) !important;
+  color: var(--client-teal) !important;
+}
+
+.status.pending,
+.status.pending-manager,
+.status.pending-supervisor,
+.status.pending-hr,
+.status.timesheet {
+  background: #fff5df !important;
+  color: #986200 !important;
+}
+
+.status.rejected,
+.status.revoked,
+.status.revoke-pending {
+  background: #fff0f2 !important;
+  color: #b4233a !important;
+}
+
+body[data-view="chat"] .teams-layout {
+  background: #f7fbfc !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+body[data-view="chat"] .teams-thread {
+  background: #ffffff !important;
+}
+
+body[data-view="chat"] .thread-header {
+  border-bottom-color: rgba(16, 27, 79, 0.08) !important;
+}
+
+body[data-view="chat"] .chat-thread {
+  background: #f4f9fa !important;
+  border-color: rgba(16, 27, 79, 0.08) !important;
+}
+
+body[data-view="chat"] .bubble.left {
+  background: #ffffff !important;
+  color: var(--client-navy) !important;
+  border-color: rgba(16, 27, 79, 0.1) !important;
+}
+
+body[data-view="chat"] .bubble.right {
+  background: var(--client-teal-card) !important;
+  color: #ffffff !important;
+  border-color: rgba(0, 106, 111, 0.18) !important;
+}
+
+body[data-view="chat"] .bubble.left time {
+  color: var(--muted) !important;
+}
+
+body[data-view="chat"] .bubble.right time,
+body[data-view="chat"] .bubble.right small {
+  color: rgba(255, 255, 255, 0.74) !important;
+}
+
+body[data-view="chat"] .chat-input {
+  background: #ffffff !important;
+}
+
+body[data-view="chat"] .composer-tools button:hover,
+body[data-view="chat"] #sendChat:hover,
+.primary-action:hover,
+.form-actions button:hover,
+.admin-actions button:hover,
+.quick-action-card:hover {
+  transform: translateY(-1px);
+}
+
+a,
+.link-button {
+  color: var(--client-teal) !important;
+}
+
+::selection {
+  background: rgba(0, 106, 111, 0.18);
+  color: var(--client-navy);
+}
