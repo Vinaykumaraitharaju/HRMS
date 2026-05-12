@@ -281,6 +281,21 @@ body.dark-mode .top-search input {
   display: grid;
 }
 
+.notification-dropdown {
+  width: min(380px, calc(100vw - 32px));
+  max-height: min(560px, calc(100vh - 96px));
+  overflow: hidden;
+}
+
+.notification-menu-list {
+  display: grid;
+  gap: 8px;
+  max-height: min(460px, calc(100vh - 180px));
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px;
+}
+
 .dropdown-menu button,
 .notification-menu-item {
   min-height: 42px;
@@ -288,6 +303,27 @@ body.dark-mode .top-search input {
   border-radius: 12px;
   background: var(--surface-soft);
   text-align: left;
+}
+
+.notification-menu-item {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+}
+
+.notification-menu-item strong,
+.notification-menu-item span,
+.notification-menu-item small {
+  min-width: 0;
+}
+
+.notification-dot {
+  width: 8px;
+  height: 8px;
+  margin-top: 5px;
+  border-radius: 50%;
+  background: var(--teal);
 }
 
 .notification-menu-head,
@@ -316,6 +352,17 @@ body.dark-mode .top-search input {
   font-size: 11px;
   font-style: normal;
   font-weight: 900;
+}
+
+.nav-item em {
+  justify-self: end;
+  align-self: center;
+  margin-left: 6px;
+}
+
+.nav-item .hidden,
+.nav-item em.hidden {
+  display: none !important;
 }
 
 .profile-button {
@@ -676,6 +723,17 @@ body[data-view="calendar"] .workspace-view:not(.hidden) {
   border-color: rgba(255, 255, 255, 0.12);
 }
 
+.announcements-card {
+  grid-column: 1 / span 2;
+  min-height: 220px;
+}
+
+.announcements {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 10px;
+}
+
 .card-head h2,
 .page-heading h2,
 .thread-header h2 {
@@ -734,6 +792,21 @@ body[data-view="calendar"] .workspace-view:not(.hidden) {
 .quick-action-card.warning,
 .announcement.warning {
   border-color: rgba(255, 210, 120, 0.7);
+}
+
+.announcement {
+  display: grid;
+  gap: 6px;
+  min-height: 96px;
+  color: #fff;
+  text-align: left;
+}
+
+.announcement strong,
+.announcement span,
+.announcement small {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .timeline-row {
@@ -2082,6 +2155,10 @@ body[data-view="calendar"] .pulse-suite-nav.glass-panel {
   .profile-grid,
   .calendar-layout {
     grid-template-columns: 1fr;
+  }
+
+  .announcements-card {
+    grid-column: 1;
   }
 
   .team-leave-row {
