@@ -4914,26 +4914,27 @@ function hydrateTimesheetState(state, options = {}) {
 function timesheetDayVisualState(dateText, entry, leave, holiday, today = localDateKey(new Date())) {
   const hasHours = safeNumber(entry?.hours, 0) > 0;
   const isPastWorkday = dateText < today && !isWeekend(dateText) && !holiday && !leave;
+  const hoursLabel = `${safeNumber(entry?.hours, 0)}h`;
 
   if (leave?.status === "Approved") {
-    return { className: "full-leave leave-approved", label: `FL - ${leave.leaveId || "Approved"}` };
+    return { className: "full-leave leave-approved", label: hoursLabel };
   }
   if (leave?.status?.startsWith("Pending") || leave?.status?.startsWith("Revoke Pending")) {
-    return { className: "leave-pending", label: `${leave.leaveId || "Leave"} - Pending` };
+    return { className: "leave-pending", label: hoursLabel };
   }
   if (holiday) {
-    return { className: "holiday", label: holiday?.type === "optional" ? "Optional holiday" : "Holiday" };
+    return { className: "holiday", label: hoursLabel };
   }
   if (isWeekend(dateText)) {
-    return { className: "weekend", label: hasHours ? `${safeNumber(entry?.hours, 0)}h logged` : "Weekend" };
+    return { className: "weekend", label: hoursLabel };
   }
   if (hasHours) {
-    return { className: "has-hours", label: `${safeNumber(entry?.hours, 0)}h logged` };
+    return { className: "has-hours", label: hoursLabel };
   }
   if (isPastWorkday) {
-    return { className: "missing-hours", label: "Missing hours" };
+    return { className: "missing-hours", label: "0h" };
   }
-  return { className: "not-logged", label: "Not logged" };
+  return { className: "not-logged", label: "0h" };
 }
 
 function renderTimesheetWorkspace() {
