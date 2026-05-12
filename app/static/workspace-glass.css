@@ -522,6 +522,10 @@ body.dark-mode .top-search input {
   display: none !important;
 }
 
+.rail-shortcuts {
+  display: none !important;
+}
+
 .sidebar-brand {
   margin-bottom: 14px;
 }
@@ -1246,6 +1250,18 @@ label {
 #teamStatusSection .compact-table {
   min-width: 980px;
   table-layout: fixed;
+}
+
+#teamStatusSection .compact-table td {
+  color: var(--ink);
+}
+
+#teamStatusSection .compact-table td strong {
+  color: var(--ink);
+}
+
+#teamStatusSection .compact-table td small {
+  color: var(--muted);
 }
 
 #teamStatusSection .compact-table th:nth-child(1),

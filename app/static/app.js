@@ -36,7 +36,9 @@
     loadTimesheetState(),
     loadLeaveState(),
     loadChatUsers(),
+    ...(isPeopleManagerRole() ? [loadAdminDataFromApi()] : []),
   ]);
+  renderTeamStatusBoard();
   if (!attendanceState.loggedIn) {
     autoAttendanceLogin();
   }
@@ -717,6 +719,7 @@ let currentUserId = null;
 let adminDepartmentRecords = [];
 let adminDepartments = [];
 let adminEmployees = [];
+let teamStatusLoadPromise = null;
 let assignmentRules = loadAssignmentRules();
 let leavePolicyState = loadLeavePolicyState();
 let leavePolicySaveTimer = null;
@@ -4347,6 +4350,21 @@ function visibleTeamStatusEmployees() {
   return [];
 }
 
+function ensureTeamStatusEmployeesLoaded() {
+  if (!isPeopleManagerRole() || adminEmployees.length || teamStatusLoadPromise) return;
+  teamStatusLoadPromise = loadAdminDataFromApi()
+    .then(() => renderTeamStatusBoard())
+    .catch((error) => {
+      console.error("Team status employees could not be loaded", error);
+      if (teamStatusRows) {
+        teamStatusRows.innerHTML = `<tr><td colspan="7">Team members could not be loaded.</td></tr>`;
+      }
+    })
+    .finally(() => {
+      teamStatusLoadPromise = null;
+    });
+}
+
 function employeeDisplayId(employee, index = 0) {
   return employee.employeeId || formatEmployeeId(index + 1);
 }
@@ -4399,6 +4417,16 @@ function renderTeamStatusBoard() {
   const canViewTeam = isPeopleManagerRole();
   teamStatusSection.classList.toggle("hidden", !canViewTeam);
   if (!canViewTeam) return;
+
+  if (!adminEmployees.length) {
+    if (teamStatusScope) {
+      const scopeLabel = currentRole === "admin" ? "All employees" : "My team";
+      teamStatusScope.textContent = `${scopeLabel} - loading`;
+    }
+    teamStatusRows.innerHTML = `<tr><td colspan="7">Loading team members...</td></tr>`;
+    ensureTeamStatusEmployeesLoaded();
+    return;
+  }
 
   const visibleEmployees = filterTeamStatusEmployees(visibleTeamStatusEmployees());
   if (teamStatusScope) {
