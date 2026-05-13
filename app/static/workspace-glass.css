@@ -1172,6 +1172,11 @@ label {
   background: var(--surface);
 }
 
+#employeeAdminPanel .table-scroll {
+  max-height: clamp(280px, 38vh, 460px);
+  scrollbar-gutter: stable;
+}
+
 .credential-notice {
   display: grid;
   gap: 6px;
@@ -1209,7 +1214,68 @@ label {
 }
 
 #employeeAdminPanel .compact-table {
-  min-width: 1180px;
+  min-width: 1280px;
+}
+
+.employee-directory-table {
+  table-layout: fixed;
+}
+
+.employee-directory-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  border-bottom: 1px solid var(--line);
+  box-shadow: 0 1px 0 var(--line);
+}
+
+.employee-directory-table th,
+.employee-directory-table td {
+  vertical-align: middle;
+}
+
+.employee-directory-table th:nth-child(1),
+.employee-directory-table td:nth-child(1) {
+  width: 92px;
+}
+
+.employee-directory-table th:nth-child(2),
+.employee-directory-table td:nth-child(2) {
+  width: 230px;
+}
+
+.employee-directory-table th:nth-child(3),
+.employee-directory-table td:nth-child(3) {
+  width: 190px;
+}
+
+.employee-directory-table th:nth-child(4),
+.employee-directory-table td:nth-child(4) {
+  width: 190px;
+}
+
+.employee-directory-table th:nth-child(5),
+.employee-directory-table td:nth-child(5),
+.employee-directory-table th:nth-child(6),
+.employee-directory-table td:nth-child(6),
+.employee-directory-table th:nth-child(7),
+.employee-directory-table td:nth-child(7),
+.employee-directory-table th:nth-child(8),
+.employee-directory-table td:nth-child(8),
+.employee-directory-table th:nth-child(10),
+.employee-directory-table td:nth-child(10) {
+  width: 132px;
+}
+
+.employee-directory-table th:nth-child(9),
+.employee-directory-table td:nth-child(9) {
+  width: 150px;
+}
+
+.employee-directory-table th:nth-child(11),
+.employee-directory-table td:nth-child(11) {
+  width: 132px;
+}
 }
 
 .compact-table th,
@@ -1236,11 +1302,43 @@ label {
   background: rgba(0, 106, 111, 0.05);
 }
 
+.employee-row td {
+  color: var(--ink);
+}
+
 .employee-person,
 .team-member-cell {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.employee-person {
+  min-width: 0;
+}
+
+.employee-person > span:last-child,
+.employee-directory-table td > small {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.employee-person strong,
+.employee-person small,
+.employee-directory-table td > strong,
+.employee-directory-table td > small {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.employee-directory-table td > small {
+  margin-top: 4px;
+  color: var(--muted);
+  font-weight: 600;
 }
 
 #teamStatusSection .table-scroll {
@@ -1405,6 +1503,21 @@ label {
   min-width: 0;
   font-style: normal;
   line-height: 1.2;
+}
+
+.employee-directory-table .role-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.employee-directory-table .role-actions button {
+  min-height: 34px;
+  padding: 7px 10px;
+  border-radius: 10px;
+  background: var(--surface);
+  font-weight: 800;
+  white-space: nowrap;
 }
 
 .timesheet-day-line small {
@@ -1787,6 +1900,148 @@ body[data-view="profile"] .workspace-view:not(.hidden) {
 
 #leaveCalendarGrid {
   gap: 8px;
+}
+
+.requests-view {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 12px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.requests-card {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 12px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.requests-toolbar {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(140px, 0.28fr) minmax(150px, 0.32fr);
+  gap: 10px;
+  align-items: end;
+}
+
+.requests-toolbar label {
+  margin: 0;
+  min-width: 0;
+}
+
+.requests-toolbar input,
+.requests-toolbar select {
+  min-height: 42px;
+}
+
+.request-summary-chips {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(100px, 1fr));
+  gap: 10px;
+}
+
+.request-summary-chips span {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.request-summary-chips strong {
+  color: var(--teal);
+  font-size: 18px;
+}
+
+.request-table-scroll {
+  min-height: 0;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.request-table {
+  width: 100%;
+  min-width: 980px;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.request-table th,
+.request-table td {
+  padding: 12px 10px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: middle;
+  overflow-wrap: anywhere;
+}
+
+.request-table th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--surface-soft);
+  color: var(--ink);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.request-table th:nth-child(1),
+.request-table td:nth-child(1) {
+  width: 16%;
+}
+
+.request-table th:nth-child(2),
+.request-table td:nth-child(2) {
+  width: 13%;
+}
+
+.request-table th:nth-child(3),
+.request-table td:nth-child(3) {
+  width: 14%;
+}
+
+.request-table th:nth-child(4),
+.request-table td:nth-child(4) {
+  width: 7%;
+}
+
+.request-table th:nth-child(5),
+.request-table td:nth-child(5) {
+  width: 18%;
+}
+
+.request-table th:nth-child(6),
+.request-table td:nth-child(6) {
+  width: 13%;
+}
+
+.request-table th:nth-child(7),
+.request-table td:nth-child(7) {
+  width: 10%;
+}
+
+.request-table th:nth-child(8),
+.request-table td:nth-child(8) {
+  width: 9%;
+  white-space: nowrap;
+}
+
+.request-action-button {
+  min-width: 78px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: var(--surface);
+  font-weight: 800;
 }
 
 #leaveCalendarGrid button {

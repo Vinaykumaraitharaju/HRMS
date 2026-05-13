@@ -5,7 +5,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Wavelynk HRMS</title>
-  <link rel="stylesheet" href="/static/workspace-glass.css?v=20260513-compact-fit" />
+  <link rel="stylesheet" href="/static/workspace-glass.css?v=20260513-admin-directory" />
 </head>
 
 <body>
@@ -225,10 +225,10 @@
             <p>Manage people, access, leave policies, timesheets, and audit controls with a premium operating console.
             </p>
             <div class="admin-insights">
-              <article><span>👥</span><strong>128</strong><small>Employees mapped</small></article>
-              <article><span>⚡</span><strong>17</strong><small>Approvals in motion</small></article>
-              <article><span>🛡</span><strong>99.8%</strong><small>Policy coverage</small></article>
-              <article><span>🌍</span><strong>4</strong><small>Active locations</small></article>
+              <article><span>👥</span><strong id="adminEmployeeMetric">0</strong><small>Employees mapped</small></article>
+              <article><span>⚡</span><strong id="adminApprovalMetric">0</strong><small>Approvals in motion</small></article>
+              <article><span>🛡</span><strong id="adminCoverageMetric">0%</strong><small>Policy coverage</small></article>
+              <article><span>🌍</span><strong id="adminLocationMetric">0</strong><small>Active locations</small></article>
             </div>
             <div class="admin-actions">
               <button type="button" data-role-action="open-employees">👥 Employees</button>
@@ -277,7 +277,22 @@
             </form>
             <div id="employeeCredentialNotice" class="credential-notice hidden" aria-live="polite"></div>
             <div class="table-scroll">
-              <table class="compact-table">
+              <table class="compact-table employee-directory-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Employee</th>
+                    <th>Contact</th>
+                    <th>Job</th>
+                    <th>Department</th>
+                    <th>Project</th>
+                    <th>Location</th>
+                    <th>Role</th>
+                    <th>Manager</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
                 <tbody id="employeeAdminRows"></tbody>
               </table>
             </div>
@@ -474,6 +489,47 @@
               <div id="leaveRequestList" class="request-list"></div>
             </article>
           </div>
+        </section>
+
+        <section id="requestsView" class="workspace-view requests-view hidden">
+          <div class="glass-panel page-heading">
+            <h2>My Requests</h2><span id="requestsSummaryChip">0 requests</span>
+          </div>
+          <article class="glass-card requests-card">
+            <div class="requests-toolbar">
+              <label>Search<input id="requestSearchInput" type="search"
+                  placeholder="Search request ID, reason, status" /></label>
+              <label>Type<select id="requestTypeFilter">
+                  <option value="all">All types</option>
+                  <option value="leave">Leave</option>
+                </select></label>
+              <label>Status<select id="requestStatusFilter">
+                  <option value="all">All statuses</option>
+                  <option value="pending">Pending</option>
+                  <option value="approved">Approved</option>
+                  <option value="revoked">Revoked</option>
+                  <option value="rejected">Rejected</option>
+                </select></label>
+            </div>
+            <div id="requestSummaryChips" class="request-summary-chips"></div>
+            <div class="request-table-scroll">
+              <table class="request-table">
+                <thead>
+                  <tr>
+                    <th>Request ID</th>
+                    <th>Type</th>
+                    <th>Dates</th>
+                    <th>Days</th>
+                    <th>Reason</th>
+                    <th>Status</th>
+                    <th>Stage</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="myRequestRows"></tbody>
+              </table>
+            </div>
+          </article>
         </section>
 
         <section id="calendarView" class="workspace-view hidden">
@@ -684,7 +740,7 @@
   </div>
 
   <div id="toast" class="toast hidden"></div>
-  <script src="/static/app.js?v=20260513-compact-fit"></script>
+  <script src="/static/app.js?v=20260513-admin-directory"></script>
 </body>
 
 </html>

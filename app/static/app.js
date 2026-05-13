@@ -303,7 +303,7 @@ const navTargets = {
   "My Leaves": "leaveView",
   "Leave Calendar": "leaveView",
   "Leave Balance": "leaveView",
-  "My Requests": "leaveRequestsSection",
+  "My Requests": "requestsView",
   "Expense Claims": "announcementsSection",
   Notifications: "announcementsSection",
   Settings: "profileView",
@@ -401,6 +401,10 @@ const addDepartmentButton = document.querySelector("#addDepartmentButton");
 const employeeRoleInput = document.querySelector("#employeeRoleInput");
 const employeeManagerInput = document.querySelector("#employeeManagerInput");
 const employeeAdminRows = document.querySelector("#employeeAdminRows");
+const adminEmployeeMetric = document.querySelector("#adminEmployeeMetric");
+const adminApprovalMetric = document.querySelector("#adminApprovalMetric");
+const adminCoverageMetric = document.querySelector("#adminCoverageMetric");
+const adminLocationMetric = document.querySelector("#adminLocationMetric");
 const employeeCredentialNotice = document.querySelector("#employeeCredentialNotice");
 const newEmployeeButton = document.querySelector("#newEmployeeButton");
 const resetEmployeeFormButton = document.querySelector("#resetEmployeeFormButton");
@@ -475,6 +479,7 @@ const detailAvatar = document.querySelector("#detailAvatar");
 const adminView = document.querySelector("#adminView");
 const timesheetView = document.querySelector("#timesheetView");
 const leaveView = document.querySelector("#leaveView");
+const requestsView = document.querySelector("#requestsView");
 const calendarView = document.querySelector("#calendarView");
 const topHeader = document.querySelector(".top-header");
 const contentGrid = document.querySelector(".content-grid");
@@ -574,6 +579,12 @@ const leaveSelectionSummary = document.querySelector("#leaveSelectionSummary");
 const leaveMonthPrev = document.querySelector("#leaveMonthPrev");
 const leaveMonthNext = document.querySelector("#leaveMonthNext");
 const leavePendingChip = document.querySelector("#leavePendingChip");
+const requestsSummaryChip = document.querySelector("#requestsSummaryChip");
+const requestSummaryChips = document.querySelector("#requestSummaryChips");
+const requestSearchInput = document.querySelector("#requestSearchInput");
+const requestTypeFilter = document.querySelector("#requestTypeFilter");
+const requestStatusFilter = document.querySelector("#requestStatusFilter");
+const myRequestRows = document.querySelector("#myRequestRows");
 
 let activeConversationId = null;
 let activeRecipientId = null;
@@ -913,6 +924,7 @@ function clearMeasuredLayout() {
     chatView,
     timesheetView,
     leaveView,
+    requestsView,
     calendarView,
     activityView,
     teamsLayout,
@@ -962,6 +974,10 @@ function syncViewportLayout() {
   if (leaveView) {
     leaveView.style.height = `${availableHeight}px`;
     leaveView.style.maxHeight = `${availableHeight}px`;
+  }
+  if (requestsView) {
+    requestsView.style.height = `${availableHeight}px`;
+    requestsView.style.maxHeight = `${availableHeight}px`;
   }
   if (calendarView) {
     calendarView.style.height = `${availableHeight}px`;
@@ -1511,18 +1527,20 @@ function showView(viewName, targetId) {
   const isAdmin = viewName === "admin";
   const isTimesheet = viewName === "timesheet";
   const isLeave = viewName === "leave";
+  const isRequests = viewName === "requests";
   const isCalendar = viewName === "calendar";
   const isActivity = viewName === "activity";
   if (isChat && globalSearch) {
     globalSearch.value = "";
   }
   syncPulseSuiteNav(viewName);
-  dashboardView.classList.toggle("hidden", isChat || isProfile || isAdmin || isTimesheet || isLeave || isCalendar || isActivity);
+  dashboardView.classList.toggle("hidden", isChat || isProfile || isAdmin || isTimesheet || isLeave || isRequests || isCalendar || isActivity);
   profileView.classList.toggle("hidden", !isProfile);
   adminView.classList.toggle("hidden", !isAdmin);
   chatView.classList.toggle("hidden", !isChat);
   timesheetView.classList.toggle("hidden", !isTimesheet);
   leaveView.classList.toggle("hidden", !isLeave);
+  requestsView?.classList.toggle("hidden", !isRequests);
   activityView.classList.toggle("hidden", !isActivity);
   calendarView.classList.toggle("hidden", !isCalendar);
   contentGrid.classList.remove("workspace-page-scroll");
@@ -1534,12 +1552,13 @@ function showView(viewName, targetId) {
           : isAdmin ? "adminView"
             : isTimesheet ? "timesheetView"
               : isLeave ? "leaveView"
-                : isCalendar ? "calendarView"
+                : isRequests ? "requestsView"
+                  : isCalendar ? "calendarView"
                   : isActivity ? "activityView"
                     : "dashboardSection"
     )
   );
-  if (!isChat && !isProfile && !isAdmin && !isTimesheet && !isLeave && !isCalendar && !isActivity) {
+  if (!isChat && !isProfile && !isAdmin && !isTimesheet && !isLeave && !isRequests && !isCalendar && !isActivity) {
     target.scrollIntoView({ behavior: "smooth", block: "start" });
   }
   target.classList.add("focus-pulse");
@@ -1558,6 +1577,7 @@ const viewPaths = {
   chat: "/chat",
   timesheet: "/timesheet",
   leave: "/leave",
+  requests: "/requests",
   calendar: "/calendar",
   activity: "/activity",
   profile: "/profile",
@@ -1569,6 +1589,7 @@ const pathViews = {
   "/chat": ["chat", "chatView", "Chat"],
   "/timesheet": ["timesheet", "timesheetView", "Timesheet"],
   "/leave": ["leave", "leaveView", "Apply Leave"],
+  "/requests": ["requests", "requestsView", "My Requests"],
   "/calendar": ["calendar", "calendarView", "Calendar"],
   "/activity": ["activity", "activityView", "Activity"],
   "/profile": ["profile", "profileView", "Settings"],
@@ -2328,32 +2349,48 @@ function showEmployeeCredentialNotice({ name, email, password }) {
   `;
 }
 
+function updateAdminInsights() {
+  const activeEmployees = (adminEmployees || []).filter((employee) => employee?.active !== false);
+  const pendingApprovals = (teamLeaveRequests || []).filter((request) => safeStatus(request?.status).toLowerCase().startsWith("pending")).length;
+  const coveredEmployees = activeEmployees.filter((employee) =>
+    Boolean(employee?.department || employee?.departmentId) && Boolean(employee?.role)
+  ).length;
+  const policyCoverage = activeEmployees.length ? Math.round((coveredEmployees / activeEmployees.length) * 100) : 0;
+  const activeLocations = new Set(activeEmployees.map((employee) => safeText(employee?.location).trim()).filter(Boolean));
+
+  if (adminEmployeeMetric) adminEmployeeMetric.textContent = String(activeEmployees.length);
+  if (adminApprovalMetric) adminApprovalMetric.textContent = String(pendingApprovals);
+  if (adminCoverageMetric) adminCoverageMetric.textContent = `${policyCoverage}%`;
+  if (adminLocationMetric) adminLocationMetric.textContent = String(activeLocations.size);
+}
+
 function renderEmployeeAdmin() {
   if (!employeeAdminRows) return;
+  updateAdminInsights();
   employeeAdminRows.innerHTML = adminEmployees
     .map((employee) => `
       <tr class="employee-row" data-employee-id="${employee.id}">
-        <td><span class="employee-id-pill">${employee.employeeId}</span></td>
+        <td><span class="employee-id-pill">${escapeHtml(employee.employeeId)}</span></td>
         <td>
           <div class="employee-person">
             <span class="employee-avatar">${safeInitials(employee?.name)}</span>
-            <span><strong>${employee?.name || "Employee"}</strong><small>${employee?.email || ""}</small></span>
+            <span><strong>${escapeHtml(employee?.name || "Employee")}</strong><small>${escapeHtml(employee?.email || "")}</small></span>
           </div>
         </td>
-        <td><strong>${employee.mobile || "Not added"}</strong><small>${employee.personalEmail || "No personal email"}</small></td>
-        <td><strong>${employee.jobTitle || employee.role}</strong><small>${employee.employmentType || "Full-time"}${employee.dateJoined ? ` - Joined ${employee.dateJoined}` : ""}</small></td>
-        <td><span class="soft-chip">${employee?.department || ""}</span></td>
-        <td><span class="project-chip">${employee.project || "Not assigned"}</span></td>
-        <td><span class="location-chip">${employee.location || "Not assigned"}</span></td>
-        <td><span class="role-chip">${employee?.role || ""}</span></td>
-        <td>${employee.manager || "Not assigned"}</td>
+        <td><strong>${escapeHtml(employee.mobile || "Not added")}</strong><small>${escapeHtml(employee.personalEmail || "No personal email")}</small></td>
+        <td><strong>${escapeHtml(employee.jobTitle || employee.role)}</strong><small>${escapeHtml(employee.employmentType || "Full-time")}${employee.dateJoined ? ` - Joined ${escapeHtml(employee.dateJoined)}` : ""}</small></td>
+        <td><span class="soft-chip">${escapeHtml(employee?.department || "Not assigned")}</span></td>
+        <td><span class="project-chip">${escapeHtml(employee.project || "Not assigned")}</span></td>
+        <td><span class="location-chip">${escapeHtml(employee.location || "Not assigned")}</span></td>
+        <td><span class="role-chip">${escapeHtml(employee?.role || "")}</span></td>
+        <td>${escapeHtml(employee.manager || "Not assigned")}</td>
         <td><span class="status ${employee.active ? "approved" : "revoked"}">${employee.active ? "Active" : "Inactive"}</span></td>
         <td class="role-actions">
           <button type="button" data-employee-action="edit">Edit</button>
           <button type="button" data-employee-action="toggle">${employee.active ? "Deactivate" : "Reactivate"}</button>
         </td>
       </tr>`)
-    .join("");
+    .join("") || `<tr><td colspan="11">No employees found.</td></tr>`;
 }
 
 function managerCandidates() {
@@ -3245,6 +3282,7 @@ function canActOnTeamLeave(request, action) {
 async function loadTeamLeaveRequests() {
   const rows = await fetchJson("/api/v1/leaves/team");
   teamLeaveRequests = mapLeaveStateRequests(rows);
+  updateAdminInsights();
   renderTeamLeaveRequests();
 }
 
@@ -3541,6 +3579,10 @@ async function openEmployeeAdmin() {
 
   try {
     await loadAdminDataFromApi();
+    await loadTeamLeaveRequests().catch(() => {
+      teamLeaveRequests = [];
+      updateAdminInsights();
+    });
     renderDepartmentOptions();
     renderProjectLocationOptions();
     renderEmployeeManagerOptions();
@@ -4253,6 +4295,12 @@ function renderSidebar() {
         navigateToView("timesheet", "timesheetView", "Timesheet");
       } else if (label === "Leave" || label === "Apply Leave" || label === "My Leaves" || label === "Leave Balance" || label === "Leave Calendar") {
         navigateToView("leave", "leaveView", label);
+      } else if (label === "My Requests") {
+        navigateToView("requests", "requestsView", "My Requests");
+        renderMyRequests();
+      } else if (label === "Expense Claims" || label === "Expenses") {
+        setActiveSidebarLabel(label);
+        showToast("Expenses upgrade is in progress.");
       } else if (label === "Calendar" || label === "Leave Calendar") {
         navigateToView("calendar", "calendarView", "Calendar");
       } else if (navTargets[label] === "profileView") {
@@ -5172,6 +5220,87 @@ function canRevokeLeave(request) {
   return safeStatus(request?.status) !== "Revoked" && !safeStatus(request?.status).startsWith("Revoke Pending");
 }
 
+function requestStageLabel(request) {
+  const current = leaveStepsFor(request).find(([, state]) => state === "current");
+  if (current?.[0]) return current[0];
+  const done = leaveStepsFor(request).filter(([, state]) => state === "done").at(-1);
+  return done?.[0] || "Submitted";
+}
+
+function myRequestRowsFromLeave() {
+  return (leaveTrackerRequests || [])
+    .filter(Boolean)
+    .map((request) => ({
+      id: request?.id || "",
+      requestId: request?.leaveId || "",
+      type: request?.type || "Leave",
+      category: "leave",
+      start: request?.start,
+      end: request?.end,
+      amount: `${request?.days || 0}`,
+      reason: request?.reason || "",
+      status: request?.status || "Pending",
+      stage: requestStageLabel(request),
+      raw: request,
+    }))
+    .sort((a, b) => safeText(b.start).localeCompare(safeText(a.start)));
+}
+
+function renderMyRequests() {
+  if (!myRequestRows) return;
+
+  const searchTerm = safeText(requestSearchInput?.value).trim().toLowerCase();
+  const typeFilter = safeText(requestTypeFilter?.value, "all");
+  const statusFilter = safeText(requestStatusFilter?.value, "all");
+  const allRows = myRequestRowsFromLeave();
+  const visibleRows = allRows.filter((row) => {
+    const status = safeStatus(row.status).toLowerCase();
+    const haystack = [row.requestId, row.type, row.reason, row.status, row.stage].join(" ").toLowerCase();
+    const matchesSearch = !searchTerm || haystack.includes(searchTerm);
+    const matchesType = typeFilter === "all" || row.category === typeFilter;
+    const matchesStatus = statusFilter === "all" || status.includes(statusFilter);
+    return matchesSearch && matchesType && matchesStatus;
+  });
+
+  const counts = allRows.reduce((acc, row) => {
+    const status = safeStatus(row.status).toLowerCase();
+    if (status.startsWith("pending") || status.startsWith("revoke pending")) acc.pending += 1;
+    else if (status === "approved") acc.approved += 1;
+    else if (status === "revoked") acc.revoked += 1;
+    else if (status === "rejected") acc.rejected += 1;
+    return acc;
+  }, { pending: 0, approved: 0, revoked: 0, rejected: 0 });
+
+  if (requestsSummaryChip) {
+    requestsSummaryChip.textContent = `${allRows.length} request${allRows.length === 1 ? "" : "s"}`;
+  }
+  if (requestSummaryChips) {
+    requestSummaryChips.innerHTML = [
+      ["Total", allRows.length],
+      ["Pending", counts.pending],
+      ["Approved", counts.approved],
+      ["Revoked", counts.revoked],
+      ["Rejected", counts.rejected],
+    ].map(([label, value]) => `<span><strong>${value}</strong>${label}</span>`).join("");
+  }
+
+  myRequestRows.innerHTML = visibleRows.map((row) => {
+    const dateRange = `${formatDateText(row.start, { month: "short", day: "numeric" })} - ${formatDateText(row.end, { month: "short", day: "numeric" })}`;
+    const actionLabel = row.raw?.status === "Revoked" ? "Revoked" : row.raw?.status?.startsWith("Revoke Pending") ? "Pending" : "Revoke";
+    return `
+      <tr>
+        <td><strong>${escapeHtml(row.requestId || "-")}</strong></td>
+        <td>${escapeHtml(row.type)}</td>
+        <td>${dateRange}</td>
+        <td>${escapeHtml(row.amount)}</td>
+        <td>${escapeHtml(row.reason || "-")}</td>
+        <td><span class="status ${statusClassName(row.status)}">${escapeHtml(row.status)}</span></td>
+        <td>${escapeHtml(row.stage)}</td>
+        <td><button class="request-action-button" type="button" data-revoke-leave="${escapeHtml(row.id)}" ${canRevokeLeave(row.raw) ? "" : "disabled"}>${actionLabel}</button></td>
+      </tr>`;
+  }).join("") || `<tr><td colspan="8">No requests match this view.</td></tr>`;
+}
+
 function leaveStatusConsumesBalance(status = "") {
   const clean = safeStatus(status).toLowerCase();
   return (
@@ -5387,6 +5516,7 @@ function renderLeaveWorkspace() {
       </thead>
       <tbody>${requestRows || `<tr><td colspan="6">No leave requests yet.</td></tr>`}</tbody>
     </table>`;
+  renderMyRequests();
 
   const monthDate = leaveCalendarMonth;
   leaveMonthLabel.textContent = monthDate.toLocaleDateString([], { month: "long", year: "numeric" });
@@ -7032,6 +7162,14 @@ function bindInteractions() {
     if (!button) return;
     revokeLeaveRequest(button.dataset.revokeLeave);
   });
+  myRequestRows?.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-revoke-leave]");
+    if (!button) return;
+    revokeLeaveRequest(button.dataset.revokeLeave);
+  });
+  requestSearchInput?.addEventListener("input", renderMyRequests);
+  requestTypeFilter?.addEventListener("change", renderMyRequests);
+  requestStatusFilter?.addEventListener("change", renderMyRequests);
   refreshTeamLeaveRequests?.addEventListener("click", () => {
     loadTeamLeaveRequests().then(() => showToast("Team leave requests refreshed.")).catch((err) => {
       showToast(err.message || "Team leave requests could not be refreshed.");

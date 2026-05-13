@@ -380,7 +380,7 @@ def create_app() -> FastAPI:
 
     @app.get("/{page_name}", include_in_schema=False)
     async def client_page(page_name: str, request: Request):
-        client_pages = {"chat", "timesheet", "leave", "calendar", "activity", "profile"}
+        client_pages = {"chat", "timesheet", "leave", "requests", "calendar", "activity", "profile"}
         if page_name not in client_pages:
             raise HTTPException(status_code=404, detail="Not Found")
         if not is_authenticated(request):
