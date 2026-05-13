@@ -2752,6 +2752,332 @@ body[data-view="calendar"] .pulse-suite-nav.glass-panel {
   gap: 10px;
 }
 
+@media (min-width: 981px) {
+  :root {
+    --sidebar-closed-space: 72px;
+    --sidebar-open-space: 254px;
+    --radius: 14px;
+    --radius-sm: 10px;
+    --shadow: 0 12px 28px rgba(16, 24, 40, 0.07);
+    --shadow-soft: 0 8px 18px rgba(16, 24, 40, 0.055);
+  }
+
+  body {
+    font-size: 14px;
+  }
+
+  input,
+  select,
+  textarea {
+    min-height: 34px;
+    padding: 8px 10px;
+    border-radius: 10px;
+  }
+
+  textarea {
+    min-height: 76px;
+  }
+
+  .app-shell {
+    padding: 6px 8px 6px var(--sidebar-closed-space);
+  }
+
+  .main-content {
+    height: calc(100vh - 12px);
+    padding-bottom: 6px;
+  }
+
+  .top-header {
+    min-height: 46px;
+    margin-bottom: 6px;
+    padding: 4px 8px;
+    border-radius: 16px;
+  }
+
+  .top-search {
+    max-width: 520px;
+    min-height: 38px;
+    gap: 8px;
+    padding: 5px 10px;
+  }
+
+  .top-search span::before {
+    width: 20px;
+    height: 20px;
+    border-radius: 7px;
+  }
+
+  .header-actions {
+    gap: 7px;
+  }
+
+  .icon-button {
+    width: 34px;
+    height: 34px;
+    border-radius: 11px;
+  }
+
+  .profile-button {
+    min-height: 38px;
+    min-width: 190px;
+    padding: 4px 10px 4px 4px;
+    border-radius: 14px;
+  }
+
+  .profile-button .avatar,
+  .profile-photo,
+  .chat-avatar,
+  .employee-avatar,
+  .team-avatar,
+  .message-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 11px;
+  }
+
+  .sidebar {
+    top: 48px;
+    left: 10px;
+    width: 54px;
+    height: calc(100vh - 58px);
+    padding: 10px 8px;
+    border-radius: 18px;
+  }
+
+  .sidebar.is-open {
+    width: 238px;
+  }
+
+  .sidebar-toggle {
+    top: 12px;
+    left: 12px;
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+  }
+
+  .sidebar-brand {
+    margin-bottom: 8px;
+    padding: 10px;
+  }
+
+  .sidebar-brand b,
+  .nav-item span,
+  .nav-item i {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+  }
+
+  .sidebar-nav,
+  .nav-group {
+    gap: 6px;
+  }
+
+  .nav-group p {
+    margin: 8px 6px 2px;
+    font-size: 10px;
+  }
+
+  .nav-item {
+    grid-template-columns: 32px minmax(0, 1fr) auto;
+    gap: 8px;
+    min-height: 42px;
+    padding: 6px 8px;
+    border-radius: 12px;
+  }
+
+  .content-grid {
+    height: calc(100vh - 58px);
+  }
+
+  body[data-view="dashboard"] .content-grid {
+    height: calc(100vh - 12px);
+  }
+
+  .workspace-view {
+    padding-right: 0;
+  }
+
+  body[data-view="chat"] .workspace-view:not(.hidden),
+  body[data-view="activity"] .workspace-view:not(.hidden),
+  body[data-view="calendar"] .workspace-view:not(.hidden) {
+    padding-left: 72px;
+  }
+
+  .glass-card {
+    padding: 12px;
+    border-radius: 14px;
+  }
+
+  .page-heading {
+    gap: 5px;
+    margin-bottom: 8px;
+    padding: 16px 18px;
+    border-radius: 16px;
+  }
+
+  .page-heading h2 {
+    font-size: clamp(26px, 3vw, 40px);
+  }
+
+  .welcome-note,
+  .page-heading p {
+    line-height: 1.45;
+  }
+
+  .hero-dashboard {
+    grid-template-columns: minmax(0, 1fr) 200px;
+    min-height: 136px;
+    gap: 10px;
+    padding: 20px;
+    border-radius: 18px;
+  }
+
+  .hero-dashboard h1 {
+    font-size: clamp(30px, 3vw, 44px);
+  }
+
+  .hero-card {
+    min-height: 104px;
+    padding: 12px;
+  }
+
+  .dashboard-mosaic {
+    grid-template-columns: minmax(240px, 1fr) minmax(220px, 0.9fr) minmax(220px, 0.9fr);
+    gap: 8px;
+  }
+
+  .dashboard-mosaic .glass-card {
+    padding: 12px;
+  }
+
+  .workspace-two-col,
+  .profile-grid {
+    gap: 10px;
+  }
+
+  .leave-view .workspace-two-col {
+    grid-template-columns: minmax(320px, 0.86fr) minmax(420px, 1.14fr);
+    gap: 10px;
+  }
+
+  .admin-form,
+  .entry-form,
+  .form-card,
+  .compact-form {
+    gap: 8px;
+  }
+
+  label {
+    gap: 4px;
+    font-size: 11px;
+  }
+
+  .form-actions button,
+  .primary-action,
+  #sendChat,
+  .join-btn {
+    min-height: 36px;
+    padding: 8px 12px;
+    border-radius: 10px;
+  }
+
+  .leave-balance-grid {
+    gap: 8px;
+  }
+
+  .leave-balance-item {
+    padding: 10px;
+    border-radius: 12px;
+  }
+
+  .leave-balance-item span {
+    font-size: 18px;
+  }
+
+  .selection-summary {
+    gap: 8px;
+  }
+
+  .selection-summary > div,
+  .timesheet-metric,
+  .timesheet-summary-row {
+    min-height: 30px;
+    padding: 6px 9px;
+  }
+
+  .timesheet-week,
+  #timesheetWeekGrid,
+  .mini-calendar,
+  #timesheetMiniCalendar,
+  #leaveCalendarGrid {
+    gap: 7px;
+  }
+
+  .timesheet-day,
+  .mini-calendar button,
+  #leaveCalendarGrid button {
+    min-height: 50px;
+    padding: 8px;
+    border-radius: 12px;
+  }
+
+  #leaveCalendarGrid button {
+    min-height: 54px;
+  }
+
+  .compact-table th,
+  .compact-table td,
+  .leave-request-table th,
+  .leave-request-table td {
+    padding: 8px 10px;
+  }
+
+  .admin-insights {
+    gap: 8px;
+    margin: 10px 0;
+  }
+
+  .admin-insights article {
+    grid-template-columns: 40px minmax(0, 1fr);
+    min-height: 76px;
+    padding: 10px;
+    border-radius: 12px;
+  }
+
+  .admin-insights span {
+    width: 40px;
+    height: 40px;
+  }
+
+  .admin-insights strong {
+    font-size: 22px;
+  }
+
+  .teams-layout {
+    grid-template-columns: minmax(250px, 300px) minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .teams-chat-rail {
+    gap: 10px;
+    padding: 14px;
+    border-radius: 18px;
+  }
+
+  .chat-input {
+    min-height: 66px;
+    padding: 10px;
+  }
+
+  .chat-input textarea#chatMessage {
+    min-height: 46px;
+    height: 46px;
+    padding: 12px 14px;
+  }
+}
+
 .focus-pulse {
   animation: focusPulse 800ms ease;
 }
