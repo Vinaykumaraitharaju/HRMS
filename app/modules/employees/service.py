@@ -2,7 +2,7 @@ from datetime import date
 import secrets
 
 from fastapi import HTTPException, status
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import hash_password
@@ -226,6 +226,14 @@ class EmployeeService:
         if user:
             user.is_active = False
             user.employee_id = None
+
+        await self.db.execute(
+            update(Employee)
+            .where(Employee.reports_to_id == employee.id)
+            .values(reports_to_id=None)
+        )
+        employee.reports_to_id = None
+        await self.db.flush()
 
         await self.db.delete(employee)
         await self.db.commit()
