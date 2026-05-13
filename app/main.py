@@ -378,6 +378,15 @@ def create_app() -> FastAPI:
     async def login_page():
         return FileResponse(static_dir / "login.html")
 
+    @app.get("/{page_name}", include_in_schema=False)
+    async def client_page(page_name: str, request: Request):
+        client_pages = {"chat", "timesheet", "leave", "calendar", "activity", "profile"}
+        if page_name not in client_pages:
+            raise HTTPException(status_code=404, detail="Not Found")
+        if not is_authenticated(request):
+            return RedirectResponse(url="/login")
+        return FileResponse(static_dir / "index.html")
+
     return app
 
 
