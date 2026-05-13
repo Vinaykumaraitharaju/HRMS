@@ -5,7 +5,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Wavelynk HRMS</title>
-  <link rel="stylesheet" href="/static/workspace-glass.css?v=20260513-employee-search" />
+  <link rel="stylesheet" href="/static/workspace-glass.css?v=20260513-timesheet-control" />
 </head>
 
 <body>
@@ -307,36 +307,61 @@
             <div class="card-head">
               <h2>Roles & Access</h2><span id="assignmentRuleCount"></span>
             </div>
-            <form id="accessAdminForm" class="admin-form compact-form">
-              <label>Employee<select id="accessEmployeeInput"></select></label>
-              <label>Role<select id="accessRoleInput">
-                  <option>Employee</option>
-                  <option>Supervisor</option>
-                  <option>Manager</option>
-                  <option>HR</option>
-                  <option>Admin</option>
-                </select></label>
-              <label>Supervisor<select id="accessSupervisorInput"></select></label>
-              <label>Manager<select id="accessManagerInput"></select></label>
-              <button class="primary-action" type="submit">Update access</button>
-            </form>
-            <form id="passwordResetForm" class="admin-form compact-form">
-              <label>Employee<select id="passwordResetEmployeeInput"></select></label>
-              <label>Temporary password<input id="passwordResetInput" type="text" minlength="8"
-                  placeholder="TempPass#2026" required /></label>
-              <label><input id="passwordResetAuthenticatorInput" type="checkbox" checked /> Reset Microsoft
-                Authenticator</label>
-              <button class="primary-action" type="submit">Reset password</button>
-            </form>
-            <div id="accessAdminRows" class="policy-list"></div>
-            <form id="assignmentRuleForm" class="admin-form compact-form">
-              <label>Project<input id="ruleProjectInput" list="projectOptionsList" /></label>
-              <label>Location<input id="ruleLocationInput" list="locationOptionsList" /></label>
-              <label>Supervisor<select id="ruleSupervisorInput"></select></label>
-              <label>HR<select id="ruleHrInput"></select></label>
-              <label>Manager<select id="ruleManagerInput"></select></label>
-              <button class="primary-action" type="submit">Save rule</button>
-            </form>
+            <div class="access-action-grid">
+              <form id="accessAdminForm" class="access-action-card">
+                <h3>Update Access</h3>
+                <label>Employee<select id="accessEmployeeInput"></select></label>
+                <label>Role<select id="accessRoleInput">
+                    <option>Employee</option>
+                    <option>Supervisor</option>
+                    <option>Manager</option>
+                    <option>HR</option>
+                    <option>Admin</option>
+                  </select></label>
+                <label>Supervisor<select id="accessSupervisorInput"></select></label>
+                <label>Manager<select id="accessManagerInput"></select></label>
+                <button class="primary-action" type="submit">Update access</button>
+              </form>
+              <form id="passwordResetForm" class="access-action-card">
+                <h3>Reset Password</h3>
+                <label>Employee<select id="passwordResetEmployeeInput"></select></label>
+                <label>Temporary password<input id="passwordResetInput" type="text" minlength="8"
+                    placeholder="TempPass#2026" required /></label>
+                <label class="checkbox-label"><input id="passwordResetAuthenticatorInput" type="checkbox" checked />
+                  Reset Microsoft Authenticator</label>
+                <button class="primary-action" type="submit">Reset password</button>
+              </form>
+              <form id="assignmentRuleForm" class="access-action-card assignment-rule-form-card">
+                <h3>Assignment Rule</h3>
+                <label>Project<input id="ruleProjectInput" list="projectOptionsList" /></label>
+                <label>Location<input id="ruleLocationInput" list="locationOptionsList" /></label>
+                <label>Supervisor<select id="ruleSupervisorInput"></select></label>
+                <label>HR<select id="ruleHrInput"></select></label>
+                <label>Manager<select id="ruleManagerInput"></select></label>
+                <button class="primary-action" type="submit">Save rule</button>
+              </form>
+            </div>
+            <div class="access-table-toolbar">
+              <label>Search access<input id="accessDirectorySearch" type="search"
+                  placeholder="Search name, email, role, supervisor, manager" /></label>
+              <span id="accessDirectoryCount">Showing 0 of 0</span>
+            </div>
+            <div class="table-scroll access-table-scroll">
+              <table class="compact-table access-directory-table">
+                <thead>
+                  <tr>
+                    <th>Employee</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Supervisor</th>
+                    <th>Manager</th>
+                    <th>Status</th>
+                    <th>Authenticator</th>
+                  </tr>
+                </thead>
+                <tbody id="accessAdminRows"></tbody>
+              </table>
+            </div>
             <div id="assignmentRuleRows" class="assignment-rule-list"></div>
           </section>
 
@@ -400,17 +425,21 @@
             <div class="card-head">
               <h2>Timesheet Control</h2><span>Freeze rules</span>
             </div>
-            <form id="timesheetControlForm" class="admin-form compact-form">
-              <label>Freeze hour<input id="freezeHourInput" type="number" min="0" max="23" /></label>
+            <form id="timesheetControlForm" class="timesheet-control-form">
+              <label>Freeze hour<input id="freezeHourInput" type="time" /></label>
               <label>Rule<select id="freezeRuleInput">
+                  <option>Next day</option>
+                  <option>Same day</option>
                   <option>Daily freeze</option>
                   <option>Weekly freeze</option>
                 </select></label>
               <label>Weekend entry<select id="weekendEntryInput">
+                  <option>Not required</option>
                   <option>Blocked</option>
                   <option>Allowed</option>
                 </select></label>
               <label>Holiday entry<select id="holidayEntryInput">
+                  <option>Not required</option>
                   <option>Blocked</option>
                   <option>Allowed</option>
                 </select></label>
@@ -745,7 +774,7 @@
   </div>
 
   <div id="toast" class="toast hidden"></div>
-  <script src="/static/app.js?v=20260513-employee-search"></script>
+  <script src="/static/app.js?v=20260513-timesheet-control"></script>
 </body>
 
 </html>

@@ -1142,6 +1142,207 @@ label {
   justify-content: flex-start;
 }
 
+.access-action-grid {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(260px, 0.92fr);
+  gap: 12px;
+  align-items: stretch;
+}
+
+.access-action-card {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(150px, 1fr));
+  gap: 10px;
+  align-content: start;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface-soft);
+}
+
+.access-action-card h3 {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--ink);
+  font-size: 15px;
+}
+
+.access-action-card label {
+  margin: 0;
+}
+
+.access-action-card input,
+.access-action-card select {
+  min-height: 40px;
+}
+
+.access-action-card button {
+  align-self: end;
+  min-height: 40px;
+}
+
+.access-action-card .checkbox-label {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  align-self: end;
+  gap: 10px;
+  color: var(--ink);
+}
+
+.access-action-card .checkbox-label input {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+}
+
+.assignment-rule-form-card {
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(5, minmax(120px, 1fr)) minmax(120px, 0.7fr);
+}
+
+.access-table-toolbar {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+  margin-top: 12px;
+}
+
+.access-table-toolbar label {
+  margin: 0;
+}
+
+.access-table-toolbar input {
+  min-height: 42px;
+}
+
+.access-table-toolbar span {
+  align-self: end;
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  padding: 9px 13px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.access-table-scroll {
+  max-height: clamp(280px, 35vh, 440px);
+  scrollbar-gutter: stable;
+}
+
+.access-directory-table {
+  min-width: 1080px;
+  table-layout: fixed;
+}
+
+.access-directory-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  border-bottom: 1px solid var(--line);
+  box-shadow: 0 1px 0 var(--line);
+}
+
+.access-directory-table th,
+.access-directory-table td {
+  vertical-align: middle;
+}
+
+.access-directory-table th:nth-child(1),
+.access-directory-table td:nth-child(1) {
+  width: 240px;
+}
+
+.access-directory-table th:nth-child(2),
+.access-directory-table td:nth-child(2) {
+  width: 230px;
+}
+
+.access-directory-table th:nth-child(3),
+.access-directory-table td:nth-child(3),
+.access-directory-table th:nth-child(6),
+.access-directory-table td:nth-child(6),
+.access-directory-table th:nth-child(7),
+.access-directory-table td:nth-child(7) {
+  width: 130px;
+}
+
+.access-directory-table th:nth-child(4),
+.access-directory-table td:nth-child(4),
+.access-directory-table th:nth-child(5),
+.access-directory-table td:nth-child(5) {
+  width: 175px;
+}
+
+.access-directory-table td {
+  color: var(--ink);
+}
+
+.access-directory-table td:nth-child(2),
+.access-directory-table td:nth-child(4),
+.access-directory-table td:nth-child(5) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.timesheet-control-form {
+  display: grid;
+  grid-template-columns: minmax(140px, 0.72fr) repeat(4, minmax(170px, 1fr)) minmax(150px, 0.75fr);
+  gap: 10px;
+  align-items: end;
+}
+
+.timesheet-control-form label {
+  margin: 0;
+}
+
+.timesheet-control-form input,
+.timesheet-control-form select,
+.timesheet-control-form button {
+  min-height: 42px;
+}
+
+#timesheetControlSummary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(150px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.timesheet-control-card {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-soft);
+}
+
+.timesheet-control-card span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.timesheet-control-card strong {
+  color: var(--ink);
+  font-size: 16px;
+}
+
+.timesheet-control-card small {
+  color: var(--muted);
+  font-weight: 700;
+}
+
 .admin-panel .inline-tools {
   display: grid;
   grid-template-columns: minmax(220px, 1fr) auto;

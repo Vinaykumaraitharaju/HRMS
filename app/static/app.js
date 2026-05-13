@@ -417,6 +417,8 @@ const accessRoleInput = document.querySelector("#accessRoleInput");
 const accessSupervisorInput = document.querySelector("#accessSupervisorInput");
 const accessManagerInput = document.querySelector("#accessManagerInput");
 const accessAdminRows = document.querySelector("#accessAdminRows");
+const accessDirectorySearch = document.querySelector("#accessDirectorySearch");
+const accessDirectoryCount = document.querySelector("#accessDirectoryCount");
 const passwordResetForm = document.querySelector("#passwordResetForm");
 const passwordResetEmployeeInput = document.querySelector("#passwordResetEmployeeInput");
 const passwordResetInput = document.querySelector("#passwordResetInput");
@@ -2688,53 +2690,62 @@ function syncAccessFormFromEmployee() {
   accessManagerInput.value = isEligibleManager(employee.manager, employee.name) ? employee.manager || "" : "";
 }
 
+function accessSearchHaystack(employee) {
+  return [
+    employee?.name,
+    employee?.email,
+    employee?.employeeId,
+    employee?.role,
+    employee?.supervisor,
+    employee?.manager,
+    employee?.active ? "active" : "inactive",
+    employee?.totpEnabled ? "authenticator set up" : "authenticator not set up",
+  ].map((value) => safeText(value).toLowerCase()).join(" ");
+}
+
+function filteredAccessEmployees() {
+  const query = safeText(accessDirectorySearch?.value).trim().toLowerCase();
+  if (!query) return adminEmployees || [];
+  return (adminEmployees || []).filter((employee) => accessSearchHaystack(employee).includes(query));
+}
+
 function renderAccessAdmin() {
   if (!accessAdminRows) return;
 
-  accessAdminRows.innerHTML = adminEmployees
+  const employees = filteredAccessEmployees();
+  if (accessDirectoryCount) {
+    accessDirectoryCount.textContent = `Showing ${employees.length} of ${(adminEmployees || []).length}`;
+  }
+
+  accessAdminRows.innerHTML = employees
     .map((employee) => {
       const role = employee?.role || "employee";
       const supervisor = employee.supervisor || "Not assigned";
       const manager = employee.manager || "Not assigned";
 
       return `
-        <article class="access-card">
-          <div class="access-person">
+        <tr>
+          <td>
+            <div class="access-person">
             <span class="access-avatar">${safeInitials(employee?.name || "Employee")}</span>
             <div>
-              <strong>${employee?.name || "Employee"}</strong>
-              <small>${employee?.email || "No email"}</small>
+                <strong>${escapeHtml(employee?.name || "Employee")}</strong>
+                <small>${escapeHtml(employee?.employeeId || "")}</small>
             </div>
           </div>
-
-          <div class="access-meta">
-            <div>
-              <span>Role</span>
-              <b>${role}</b>
-            </div>
-            <div>
-              <span>Supervisor</span>
-              <b>${supervisor}</b>
-            </div>
-            <div>
-              <span>Manager</span>
-              <b>${manager}</b>
-            </div>
-            <div>
-              <span>Status</span>
-              <b class="status ${employee.active ? "approved" : "revoked"}">
+          </td>
+          <td>${escapeHtml(employee?.email || "No email")}</td>
+          <td><span class="role-chip">${escapeHtml(role)}</span></td>
+          <td>${escapeHtml(supervisor)}</td>
+          <td>${escapeHtml(manager)}</td>
+          <td><span class="status ${employee.active ? "approved" : "revoked"}">
                 ${employee.active ? "Active" : "Inactive"}
-              </b>
-            </div>
-            <div>
-              <span>Authenticator</span>
-              <b>${employee.totpEnabled ? "Set up" : "Not set up"}</b>
-            </div>
-          </div>
-        </article>
+          </span></td>
+          <td><span class="status ${employee.totpEnabled ? "approved" : "no-record"}">${employee.totpEnabled ? "Set up" : "Not set up"}</span></td>
+        </tr>
       `;
     })
-    .join("") || `<div class="empty-state">No employees found.</div>`;
+    .join("") || `<tr><td colspan="7">No employees found.</td></tr>`;
 }
 
 async function openRolesAccessAdmin() {
@@ -3568,18 +3579,32 @@ function saveTimesheetControlState() {
   localStorage.setItem("hrms_timesheet_control", JSON.stringify(timesheetControlState));
 }
 
+function normalizedFreezeHour(value) {
+  const text = safeText(value).trim();
+  const timeMatch = text.match(/^([01]\d|2[0-3]):([0-5]\d)$/);
+  if (timeMatch) return text;
+  const hourMatch = text.match(/^([01]?\d|2[0-3])$/);
+  if (hourMatch) return `${String(Number(hourMatch[1])).padStart(2, "0")}:00`;
+  return "";
+}
+
+function freezeHourLabel(value) {
+  return normalizedFreezeHour(value) || "Not configured";
+}
+
 function renderTimesheetControlAdmin() {
   if (!timesheetControlPanel) return;
-  freezeHourInput.value = timesheetControlState.freezeHour;
+  const freezeHour = normalizedFreezeHour(timesheetControlState.freezeHour);
+  freezeHourInput.value = freezeHour;
   freezeRuleInput.value = timesheetControlState.freezeRule;
   weekendEntryInput.value = timesheetControlState.weekendEntry;
   holidayEntryInput.value = timesheetControlState.holidayEntry;
   managerOverrideInput.value = timesheetControlState.managerOverride;
   timesheetControlSummary.innerHTML = `
-    <div class="policy-list-row"><span><strong>Freeze rule</strong><small>${timesheetControlState.freezeRule} at ${timesheetControlState.freezeHour}</small></span></div>
-    <div class="policy-list-row"><span><strong>Weekend entry</strong><small>${timesheetControlState.weekendEntry}</small></span></div>
-    <div class="policy-list-row"><span><strong>Holiday entry</strong><small>${timesheetControlState.holidayEntry}</small></span></div>
-    <div class="policy-list-row"><span><strong>Manager override</strong><small>${timesheetControlState.managerOverride}</small></span></div>`;
+    <div class="timesheet-control-card"><span>Freeze rule</span><strong>${escapeHtml(timesheetControlState.freezeRule || "Not configured")}</strong><small>${escapeHtml(freezeHourLabel(freezeHour))}</small></div>
+    <div class="timesheet-control-card"><span>Weekend entry</span><strong>${escapeHtml(timesheetControlState.weekendEntry || "Not configured")}</strong><small>Timesheet entry rule</small></div>
+    <div class="timesheet-control-card"><span>Holiday entry</span><strong>${escapeHtml(timesheetControlState.holidayEntry || "Not configured")}</strong><small>Holiday work rule</small></div>
+    <div class="timesheet-control-card"><span>Manager override</span><strong>${escapeHtml(timesheetControlState.managerOverride || "Not configured")}</strong><small>Correction access</small></div>`;
 }
 
 function openTimesheetControlAdmin() {
@@ -3591,8 +3616,9 @@ function openTimesheetControlAdmin() {
 
 function submitTimesheetControlAdmin(event) {
   event.preventDefault();
+  const freezeHour = normalizedFreezeHour(freezeHourInput.value);
   timesheetControlState = {
-    freezeHour: freezeHourInput.value,
+    freezeHour,
     freezeRule: freezeRuleInput.value,
     weekendEntry: weekendEntryInput.value,
     holidayEntry: holidayEntryInput.value,
@@ -3600,7 +3626,7 @@ function submitTimesheetControlAdmin(event) {
   };
   saveTimesheetControlState();
   renderTimesheetControlAdmin();
-  recordAudit("Timesheet", `Updated timesheet freeze rule to ${timesheetControlState.freezeRule} at ${timesheetControlState.freezeHour}`);
+  recordAudit("Timesheet", `Updated timesheet freeze rule to ${timesheetControlState.freezeRule} at ${freezeHourLabel(timesheetControlState.freezeHour)}`);
   showToast("Timesheet control saved.");
 }
 
@@ -7454,6 +7480,7 @@ function bindInteractions() {
     handleEmployeeAdminAction(button);
   });
   accessEmployeeInput?.addEventListener("change", syncAccessFormFromEmployee);
+  accessDirectorySearch?.addEventListener("input", renderAccessAdmin);
   accessAdminForm?.addEventListener("submit", submitAccessAdmin);
   passwordResetForm?.addEventListener("submit", submitPasswordResetAdmin);
   assignmentRuleForm?.addEventListener("submit", submitAssignmentRule);
