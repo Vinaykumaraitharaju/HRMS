@@ -401,6 +401,8 @@ const addDepartmentButton = document.querySelector("#addDepartmentButton");
 const employeeRoleInput = document.querySelector("#employeeRoleInput");
 const employeeManagerInput = document.querySelector("#employeeManagerInput");
 const employeeAdminRows = document.querySelector("#employeeAdminRows");
+const employeeDirectorySearch = document.querySelector("#employeeDirectorySearch");
+const employeeDirectoryCount = document.querySelector("#employeeDirectoryCount");
 const adminEmployeeMetric = document.querySelector("#adminEmployeeMetric");
 const adminApprovalMetric = document.querySelector("#adminApprovalMetric");
 const adminCoverageMetric = document.querySelector("#adminCoverageMetric");
@@ -2364,10 +2366,39 @@ function updateAdminInsights() {
   if (adminLocationMetric) adminLocationMetric.textContent = String(activeLocations.size);
 }
 
+function employeeSearchHaystack(employee) {
+  return [
+    employee?.employeeId,
+    employee?.name,
+    employee?.email,
+    employee?.mobile,
+    employee?.personalEmail,
+    employee?.jobTitle,
+    employee?.employmentType,
+    employee?.dateJoined,
+    employee?.department,
+    employee?.project,
+    employee?.location,
+    employee?.role,
+    employee?.manager,
+    employee?.active ? "active" : "inactive",
+  ].map((value) => safeText(value).toLowerCase()).join(" ");
+}
+
+function filteredAdminEmployees() {
+  const query = safeText(employeeDirectorySearch?.value).trim().toLowerCase();
+  if (!query) return adminEmployees || [];
+  return (adminEmployees || []).filter((employee) => employeeSearchHaystack(employee).includes(query));
+}
+
 function renderEmployeeAdmin() {
   if (!employeeAdminRows) return;
   updateAdminInsights();
-  employeeAdminRows.innerHTML = adminEmployees
+  const employees = filteredAdminEmployees();
+  if (employeeDirectoryCount) {
+    employeeDirectoryCount.textContent = `Showing ${employees.length} of ${(adminEmployees || []).length}`;
+  }
+  employeeAdminRows.innerHTML = employees
     .map((employee) => `
       <tr class="employee-row" data-employee-id="${employee.id}">
         <td><span class="employee-id-pill">${escapeHtml(employee.employeeId)}</span></td>
@@ -7410,6 +7441,7 @@ function bindInteractions() {
   });
   resetEmployeeFormButton?.addEventListener("click", resetEmployeeForm);
   addDepartmentButton?.addEventListener("click", addAdminDepartment);
+  employeeDirectorySearch?.addEventListener("input", renderEmployeeAdmin);
   newDepartmentInput?.addEventListener("keydown", (event) => {
     if (event.key === "Enter") {
       event.preventDefault();

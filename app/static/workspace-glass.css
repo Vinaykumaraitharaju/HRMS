@@ -1143,11 +1143,25 @@ label {
 }
 
 .admin-panel .inline-tools {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto;
+  gap: 10px;
   align-self: end;
 }
 
 .admin-panel .inline-tools input {
   min-width: 0;
+  min-height: 42px;
+}
+
+.admin-panel .inline-tools button {
+  min-height: 42px;
+  padding: 9px 16px;
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 800;
+  white-space: nowrap;
 }
 
 .admin-form label:has(input[type="checkbox"]) {
@@ -1204,6 +1218,37 @@ label {
 
 .credential-notice small {
   color: var(--muted);
+}
+
+.employee-table-toolbar {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+  margin-top: 12px;
+}
+
+.employee-table-toolbar label {
+  margin: 0;
+}
+
+.employee-table-toolbar input {
+  min-height: 42px;
+}
+
+.employee-table-toolbar span {
+  align-self: end;
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  padding: 9px 13px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
 }
 
 .compact-table,

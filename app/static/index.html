@@ -5,7 +5,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Wavelynk HRMS</title>
-  <link rel="stylesheet" href="/static/workspace-glass.css?v=20260513-admin-directory" />
+  <link rel="stylesheet" href="/static/workspace-glass.css?v=20260513-employee-search" />
 </head>
 
 <body>
@@ -276,6 +276,11 @@
                   id="resetEmployeeFormButton" type="button">Reset form</button></div>
             </form>
             <div id="employeeCredentialNotice" class="credential-notice hidden" aria-live="polite"></div>
+            <div class="employee-table-toolbar">
+              <label>Search employees<input id="employeeDirectorySearch" type="search"
+                  placeholder="Search name, ID, email, mobile, department, role, manager" /></label>
+              <span id="employeeDirectoryCount">Showing 0 of 0</span>
+            </div>
             <div class="table-scroll">
               <table class="compact-table employee-directory-table">
                 <thead>
@@ -740,7 +745,7 @@
   </div>
 
   <div id="toast" class="toast hidden"></div>
-  <script src="/static/app.js?v=20260513-admin-directory"></script>
+  <script src="/static/app.js?v=20260513-employee-search"></script>
 </body>
 
 </html>
