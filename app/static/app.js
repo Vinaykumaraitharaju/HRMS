@@ -386,7 +386,8 @@ syncThemeToggleLabel();
 const employeeAdminPanel = document.querySelector("#employeeAdminPanel");
 const employeeAdminForm = document.querySelector("#employeeAdminForm");
 const employeeRecordId = document.querySelector("#employeeRecordId");
-const employeeNameInput = document.querySelector("#employeeNameInput");
+const employeeFirstNameInput = document.querySelector("#employeeFirstNameInput");
+const employeeLastNameInput = document.querySelector("#employeeLastNameInput");
 const employeeEmailInput = document.querySelector("#employeeEmailInput");
 const employeeMobileInput = document.querySelector("#employeeMobileInput");
 const employeePersonalEmailInput = document.querySelector("#employeePersonalEmailInput");
@@ -2126,6 +2127,21 @@ function splitFullName(fullName = "") {
   };
 }
 
+function joinEmployeeName(firstName = "", lastName = "") {
+  return [safeText(firstName).trim(), safeText(lastName).trim()].filter(Boolean).join(" ");
+}
+
+function employeeNameParts(employee) {
+  const raw = employee?.raw || {};
+  const firstName = safeText(raw.first_name || employee?.firstName).trim();
+  const lastName = safeText(raw.last_name || employee?.lastName).trim();
+  if (firstName || lastName) {
+    return { firstName, lastName };
+  }
+  const split = splitFullName(employee?.name || "");
+  return { firstName: split.first_name, lastName: split.last_name };
+}
+
 function departmentNameById(id) {
   const department = adminDepartmentRecords.find((item) => Number(item.id) === Number(id));
   return department?.name || "";
@@ -2147,6 +2163,8 @@ function mapApiEmployee(employee, usersByEmployeeId = new Map()) {
   return {
     id: String(employee.id),
     employeeId: employee.employee_code || `EMP-${employee.id}`,
+    firstName: employee.first_name || "",
+    lastName: employee.last_name || "",
     name,
     email: user?.email || "",
     mobile: user?.mobile || "",
@@ -2335,6 +2353,8 @@ function resetEmployeeForm() {
   renderProjectLocationOptions();
   if (employeeMobileInput) employeeMobileInput.value = "";
   if (employeePersonalEmailInput) employeePersonalEmailInput.value = "";
+  if (employeeFirstNameInput) employeeFirstNameInput.value = "";
+  if (employeeLastNameInput) employeeLastNameInput.value = "";
   if (employeeJobTitleInput) employeeJobTitleInput.value = "Employee";
   if (employeeEmploymentTypeInput) employeeEmploymentTypeInput.value = "Full-time";
   if (employeeJoinDateInput) employeeJoinDateInput.value = todayInputValue();
@@ -3662,7 +3682,9 @@ async function openEmployeeAdmin() {
 async function submitEmployeeAdmin(event) {
   event.preventDefault();
 
-  const name = employeeNameInput?.value.trim() || "";
+  const firstName = employeeFirstNameInput?.value.trim() || "";
+  const lastName = employeeLastNameInput?.value.trim() || "";
+  const name = joinEmployeeName(firstName, lastName);
   const email = employeeEmailInput?.value.trim().toLowerCase() || "";
   const jobTitle = employeeJobTitleInput?.value.trim() || "";
   const dateJoined = employeeJoinDateInput?.value || todayInputValue();
@@ -3671,8 +3693,8 @@ async function submitEmployeeAdmin(event) {
   const managerName = employeeManagerInput?.value || "";
   const reportsToId = managerName ? employeeIdByName(managerName) : null;
 
-  if (!name || !email || !jobTitle || !departmentId) {
-    showToast("Complete name, work email, job title, and department.");
+  if (!firstName || !lastName || !email || !jobTitle || !departmentId) {
+    showToast("Complete first name, last name, work email, job title, and department.");
     return;
   }
 
@@ -3688,7 +3710,8 @@ async function submitEmployeeAdmin(event) {
     return;
   }
 
-  const { first_name, last_name } = splitFullName(name);
+  const first_name = firstName;
+  const last_name = lastName;
   const submitButton = employeeAdminForm?.querySelector('button[type="submit"]');
   const oldText = submitButton?.textContent || "Save employee";
 
@@ -3769,7 +3792,9 @@ async function handleEmployeeAdminAction(target) {
 
   if (target.dataset.employeeAction === "edit") {
     employeeRecordId.value = employee.id;
-    employeeNameInput.value = employee.name;
+    const { firstName, lastName } = employeeNameParts(employee);
+    if (employeeFirstNameInput) employeeFirstNameInput.value = firstName;
+    if (employeeLastNameInput) employeeLastNameInput.value = lastName;
     employeeEmailInput.value = employee.email;
     employeeEmailInput.disabled = true;
     if (employeeMobileInput) employeeMobileInput.value = employee.mobile || "";
@@ -3783,7 +3808,7 @@ async function handleEmployeeAdminAction(target) {
     if (employeeLocationInput) employeeLocationInput.value = employee.location || "";
     if (employeeRoleInput) employeeRoleInput.value = employee.role || "employee";
     renderEmployeeManagerOptions(employee.manager || "", employee.id);
-    employeeNameInput?.focus();
+    employeeFirstNameInput?.focus();
     showToast("Employee loaded for editing.");
     return;
   }
@@ -7467,7 +7492,7 @@ function bindInteractions() {
   employeeAdminForm?.addEventListener("submit", submitEmployeeAdmin);
   newEmployeeButton?.addEventListener("click", () => {
     resetEmployeeForm();
-    employeeNameInput.focus();
+    employeeFirstNameInput?.focus();
   });
   resetEmployeeFormButton?.addEventListener("click", resetEmployeeForm);
   addDepartmentButton?.addEventListener("click", addAdminDepartment);
