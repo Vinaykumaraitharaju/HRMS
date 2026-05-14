@@ -2748,15 +2748,15 @@ function renderAccessAdmin() {
       const manager = employee.manager || "Not assigned";
 
       return `
-        <tr>
+        <tr class="access-directory-row" data-access-employee-id="${escapeHtml(employee.id)}">
           <td>
             <div class="access-person">
-            <span class="access-avatar">${safeInitials(employee?.name || "Employee")}</span>
-            <div>
+              <span class="access-avatar">${safeInitials(employee?.name || "Employee")}</span>
+              <div>
                 <strong>${escapeHtml(employee?.name || "Employee")}</strong>
-                <small>${escapeHtml(employee?.employeeId || "")}</small>
+                <small>Employee ID: ${escapeHtml(employee?.employeeId || "-")}</small>
+              </div>
             </div>
-          </div>
           </td>
           <td>${escapeHtml(employee?.email || "No email")}</td>
           <td><span class="role-chip">${escapeHtml(role)}</span></td>
@@ -7510,6 +7510,15 @@ function bindInteractions() {
   });
   accessEmployeeInput?.addEventListener("change", syncAccessFormFromEmployee);
   accessDirectorySearch?.addEventListener("input", renderAccessAdmin);
+  accessAdminRows?.addEventListener("click", (event) => {
+    const row = event.target.closest("[data-access-employee-id]");
+    if (!row || !accessEmployeeInput) return;
+    accessEmployeeInput.value = row.dataset.accessEmployeeId;
+    syncAccessFormFromEmployee();
+    accessAdminRows.querySelectorAll(".access-directory-row").forEach((item) => item.classList.remove("selected"));
+    row.classList.add("selected");
+    showToast("Employee loaded into access form.");
+  });
   accessAdminForm?.addEventListener("submit", submitAccessAdmin);
   passwordResetForm?.addEventListener("submit", submitPasswordResetAdmin);
   assignmentRuleForm?.addEventListener("submit", submitAssignmentRule);

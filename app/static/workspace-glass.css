@@ -1238,7 +1238,7 @@ label {
 }
 
 .access-directory-table {
-  min-width: 1080px;
+  min-width: 1040px;
   table-layout: fixed;
 }
 
@@ -1257,12 +1257,12 @@ label {
 
 .access-directory-table th:nth-child(1),
 .access-directory-table td:nth-child(1) {
-  width: 240px;
+  width: 300px;
 }
 
 .access-directory-table th:nth-child(2),
 .access-directory-table td:nth-child(2) {
-  width: 230px;
+  width: 220px;
 }
 
 .access-directory-table th:nth-child(3),
@@ -1283,6 +1283,43 @@ label {
 
 .access-directory-table td {
   color: var(--ink);
+}
+
+.access-directory-row {
+  cursor: pointer;
+}
+
+.access-directory-row.selected,
+.access-directory-row:hover {
+  background: rgba(0, 106, 111, 0.06);
+}
+
+.access-directory-table .access-person {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.access-directory-table .access-person > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.access-directory-table .access-person strong,
+.access-directory-table .access-person small {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.access-directory-table .access-person small {
+  color: var(--muted);
+  font-weight: 700;
 }
 
 .access-directory-table td:nth-child(2),
