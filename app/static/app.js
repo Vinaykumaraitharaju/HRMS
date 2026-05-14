@@ -3264,55 +3264,58 @@ function renderLeavePolicyAdmin() {
   sickBalanceInput.value = leavePolicyState.sick;
   approvalFlowInput.value = leavePolicyState.approvalFlow;
   revokeRuleInput.value = leavePolicyState.revokeRule;
+
   if (leaveTypePolicyList) {
     leaveTypePolicyList.innerHTML = activeLeaveTypes()
       .map((type, index) => `
-        <div class="policy-list-row">
-          <span><strong>${type.name}</strong><small>${Number(type.balance || 0)} days available - ${type.approvalFlow}</small></span>
-          <div class="policy-row-actions">
-            <select data-leave-flow-index="${index}" aria-label="Approval flow for ${type.name}">${approvalFlowOptions(type.approvalFlow)}</select>
-            <button type="button" data-adjust-leave-type="${index}" data-adjust-delta="-1">-</button>
-            <button type="button" data-adjust-leave-type="${index}" data-adjust-delta="1">+</button>
-            <button type="button" data-remove-leave-type="${index}">Delete</button>
-          </div>
-        </div>`)
-      .join("") || `<div class="empty-state">No leave types configured.</div>`;
+        <tr>
+          <td><strong>${escapeHtml(type.name)}</strong></td>
+          <td>${Number(type.balance || 0)} days</td>
+          <td>
+            <select data-leave-flow-index="${index}" aria-label="Approval flow for ${type.name}">
+              ${approvalFlowOptions(type.approvalFlow)}
+            </select>
+          </td>
+          <td>
+            <div class="policy-row-actions">
+              <button type="button" data-adjust-leave-type="${index}" data-adjust-delta="-1">-</button>
+              <button type="button" data-adjust-leave-type="${index}" data-adjust-delta="1">+</button>
+              <button type="button" data-remove-leave-type="${index}">Delete</button>
+            </div>
+          </td>
+        </tr>`)
+      .join("") || `<tr><td colspan="4">No leave types configured.</td></tr>`;
   }
+
   renderLeaveTypeOptions();
   if (holidayCountryInput) holidayCountryInput.value = leavePolicyState.holidayCountry;
   renderHolidayLocationOptions();
   if (holidayLocationInput) holidayLocationInput.value = leavePolicyState.holidayLocation;
-  const scopedHolidays = selectedScopedHolidays();
-  holidayPolicyList.innerHTML = scopedHolidays
-    .map((holiday) => {
-      const realIndex = leavePolicyState.holidays.indexOf(holiday);
-      const holidayTypeLabel = holiday?.type === "optional" ? "Optional holiday" : "Public holiday";
 
-      return `
-      <div class="holiday-policy-row">
-        <div class="holiday-policy-info">
-          <strong>${holiday?.name || "Holiday"}</strong>
-          <small>
-            ${holiday?.country || ""} / ${holiday?.location || ""} •
-            ${formatDateText(holiday?.date, { month: "short", day: "numeric", year: "numeric" })} •
-            ${holidayTypeLabel}
-          </small>
-        </div>
-
-        <div class="holiday-policy-actions">
-          <select data-holiday-type-index="${realIndex}" aria-label="Holiday type for ${holiday?.name || "holiday"}">
-            <option value="public" ${holiday?.type === "public" ? "selected" : ""}>Public</option>
-            <option value="optional" ${holiday?.type === "optional" ? "selected" : ""}>Optional</option>
-          </select>
-
-          <button type="button" class="holiday-remove-btn" data-remove-holiday="${realIndex}">
-            Remove
-          </button>
-        </div>
-      </div>
-    `;
-    })
-    .join("") || `<div class="empty-state">No holidays configured for ${leavePolicyState.holidayCountry} / ${leavePolicyState.holidayLocation}.</div>`;
+  if (holidayPolicyList) {
+    const scopedHolidays = selectedScopedHolidays();
+    holidayPolicyList.innerHTML = scopedHolidays
+      .map((holiday) => {
+        const realIndex = leavePolicyState.holidays.indexOf(holiday);
+        return `
+          <tr>
+            <td><strong>${escapeHtml(holiday?.name || "Holiday")}</strong></td>
+            <td>${escapeHtml(holiday?.country || "")}</td>
+            <td>${escapeHtml(holiday?.location || "")}</td>
+            <td>${formatDateText(holiday?.date, { month: "short", day: "numeric", year: "numeric" })}</td>
+            <td>
+              <select data-holiday-type-index="${realIndex}" aria-label="Holiday type for ${holiday?.name || "holiday"}">
+                <option value="public" ${holiday?.type === "public" ? "selected" : ""}>Public</option>
+                <option value="optional" ${holiday?.type === "optional" ? "selected" : ""}>Optional</option>
+              </select>
+            </td>
+            <td>
+              <button type="button" class="holiday-remove-btn" data-remove-holiday="${realIndex}">Remove</button>
+            </td>
+          </tr>`;
+      })
+      .join("") || `<tr><td colspan="6">No holidays configured for ${escapeHtml(leavePolicyState.holidayCountry)} / ${escapeHtml(leavePolicyState.holidayLocation)}.</td></tr>`;
+  }
 }
 
 function openLeavePolicyAdmin() {

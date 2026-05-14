@@ -1964,12 +1964,114 @@ label {
   align-items: center;
 }
 
+.leave-policy-section {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.leave-policy-section h3 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 16px;
+}
+
+.leave-policy-form,
+.leave-type-form,
+.holiday-policy-form {
+  display: grid;
+  gap: 10px;
+  align-items: end;
+}
+
+.leave-policy-form {
+  grid-template-columns: repeat(3, minmax(96px, 0.5fr)) minmax(190px, 1fr) minmax(170px, 0.85fr) minmax(150px, 0.65fr);
+}
+
+.leave-type-form {
+  grid-template-columns: minmax(180px, 1fr) minmax(120px, 0.45fr) minmax(210px, 1fr) minmax(150px, 0.55fr);
+}
+
+.holiday-policy-form {
+  grid-template-columns: repeat(2, minmax(145px, 0.7fr)) minmax(170px, 1fr) minmax(145px, 0.7fr) minmax(130px, 0.6fr) minmax(150px, 0.6fr);
+}
+
+.leave-policy-form label,
+.leave-type-form label,
+.holiday-policy-form label {
+  margin: 0;
+}
+
+.leave-policy-form input,
+.leave-policy-form select,
+.leave-policy-form button,
+.leave-type-form input,
+.leave-type-form select,
+.leave-type-form button,
+.holiday-policy-form input,
+.holiday-policy-form select,
+.holiday-policy-form button {
+  min-height: 42px;
+}
+
+.leave-policy-table-scroll,
+.holiday-policy-table-scroll {
+  max-height: clamp(240px, 32vh, 420px);
+  overflow: auto;
+  scrollbar-gutter: stable;
+}
+
+.leave-policy-table,
+.holiday-policy-table {
+  min-width: 880px;
+  table-layout: fixed;
+}
+
+.leave-policy-table thead th,
+.holiday-policy-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--surface-soft);
+}
+
+.leave-policy-table th,
+.leave-policy-table td,
+.holiday-policy-table th,
+.holiday-policy-table td {
+  vertical-align: middle;
+  color: var(--ink);
+}
+
+.leave-policy-table select,
+.holiday-policy-table select {
+  width: 100%;
+  min-height: 36px;
+}
+
+.holiday-remove-btn {
+  min-height: 36px;
+  padding: 7px 11px;
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 800;
+  white-space: nowrap;
+}
+
 .policy-row-actions,
 .meeting-actions {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 8px;
+}
+
+.leave-policy-table .policy-row-actions {
+  flex-wrap: nowrap;
 }
 
 body[data-view="admin"] .workspace-view:not(.hidden),
@@ -3721,6 +3823,12 @@ body[data-view="calendar"] .pulse-suite-nav.glass-panel {
     grid-template-columns: 1fr;
   }
 
+  .leave-policy-form,
+  .leave-type-form,
+  .holiday-policy-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   #profileDetailsCard,
   #profileSecurityCard {
     grid-column: 1;
@@ -3777,6 +3885,12 @@ body[data-view="calendar"] .pulse-suite-nav.glass-panel {
   .sidebar-toggle {
     top: 18px;
     left: 12px;
+  }
+
+  .leave-policy-form,
+  .leave-type-form,
+  .holiday-policy-form {
+    grid-template-columns: 1fr;
   }
 
   .sidebar.is-open .sidebar-toggle,

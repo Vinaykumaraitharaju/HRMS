@@ -5,7 +5,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Wavelynk HRMS</title>
-  <link rel="stylesheet" href="/static/workspace-glass.css?v=20260514-employee-names" />
+  <link rel="stylesheet" href="/static/workspace-glass.css?v=20260514-leave-settings" />
 </head>
 
 <body>
@@ -374,47 +374,82 @@
             <div class="card-head">
               <h2>Leave Policies</h2><span>Rules</span>
             </div>
-            <form id="leavePolicyForm" class="admin-form compact-form">
-              <label>Annual<input id="annualBalanceInput" type="number" /></label>
-              <label>Casual<input id="casualBalanceInput" type="number" /></label>
-              <label>Sick<input id="sickBalanceInput" type="number" /></label>
-              <label>Approval flow<select id="approvalFlowInput">
-                  <option>Manager only</option>
-                  <option>Supervisor then Manager</option>
-                  <option>Manager then HR</option>
-                  <option>No approval required</option>
-                </select></label>
-              <label>Revoke rule<select id="revokeRuleInput">
-                  <option>Manager approval</option>
-                  <option>Supervisor approval</option>
-                  <option>Auto revoke</option>
-                </select></label>
-              <button class="primary-action" type="submit">Save balances</button>
-            </form>
-            <form id="leaveTypeAdminForm" class="admin-form compact-form">
-              <label>Type<input id="leaveTypeNameInput" /></label>
-              <label>Balance<input id="leaveTypeBalanceInput" type="number" /></label>
-              <label>Flow<select id="leaveTypeApprovalInput">
-                  <option>Manager only</option>
-                  <option>Supervisor then Manager</option>
-                  <option>Manager then HR</option>
-                  <option>No approval required</option>
-                </select></label>
-              <button class="primary-action" type="submit">Add type</button>
-            </form>
-            <div id="leaveTypePolicyList" class="policy-list"></div>
-            <form id="holidayAdminForm" class="admin-form compact-form">
-              <label>Country<select id="holidayCountryInput"></select></label>
-              <label>Location<select id="holidayLocationInput"></select></label>
-              <label>Name<input id="holidayNameInput" /></label>
-              <label>Date<input id="holidayDateInput" type="date" /></label>
-              <label>Type<select id="holidayTypeInput">
-                  <option>public</option>
-                  <option>optional</option>
-                </select></label>
-              <button class="primary-action" type="submit">Add holiday</button>
-            </form>
-            <div id="holidayPolicyList" class="policy-list"></div>
+            <article class="leave-policy-section">
+              <h3>Core Balances</h3>
+              <form id="leavePolicyForm" class="leave-policy-form">
+                <label>Annual<input id="annualBalanceInput" type="number" /></label>
+                <label>Casual<input id="casualBalanceInput" type="number" /></label>
+                <label>Sick<input id="sickBalanceInput" type="number" /></label>
+                <label>Approval flow<select id="approvalFlowInput">
+                    <option>Manager only</option>
+                    <option>Supervisor then Manager</option>
+                    <option>Manager then HR</option>
+                    <option>No approval required</option>
+                  </select></label>
+                <label>Revoke rule<select id="revokeRuleInput">
+                    <option>Manager approval</option>
+                    <option>Supervisor approval</option>
+                    <option>Auto revoke</option>
+                  </select></label>
+                <button class="primary-action" type="submit">Save balances</button>
+              </form>
+            </article>
+            <article class="leave-policy-section">
+              <h3>Leave Types</h3>
+              <form id="leaveTypeAdminForm" class="leave-type-form">
+                <label>Type<input id="leaveTypeNameInput" /></label>
+                <label>Balance<input id="leaveTypeBalanceInput" type="number" /></label>
+                <label>Flow<select id="leaveTypeApprovalInput">
+                    <option>Manager only</option>
+                    <option>Supervisor then Manager</option>
+                    <option>Manager then HR</option>
+                    <option>No approval required</option>
+                  </select></label>
+                <button class="primary-action" type="submit">Add type</button>
+              </form>
+              <div class="table-scroll leave-policy-table-scroll">
+                <table class="compact-table leave-policy-table">
+                  <thead>
+                    <tr>
+                      <th>Type</th>
+                      <th>Balance</th>
+                      <th>Approval flow</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="leaveTypePolicyList"></tbody>
+                </table>
+              </div>
+            </article>
+            <article class="leave-policy-section">
+              <h3>Holiday Calendar</h3>
+              <form id="holidayAdminForm" class="holiday-policy-form">
+                <label>Country<select id="holidayCountryInput"></select></label>
+                <label>Location<select id="holidayLocationInput"></select></label>
+                <label>Name<input id="holidayNameInput" /></label>
+                <label>Date<input id="holidayDateInput" type="date" /></label>
+                <label>Type<select id="holidayTypeInput">
+                    <option>public</option>
+                    <option>optional</option>
+                  </select></label>
+                <button class="primary-action" type="submit">Add holiday</button>
+              </form>
+              <div class="table-scroll holiday-policy-table-scroll">
+                <table class="compact-table holiday-policy-table">
+                  <thead>
+                    <tr>
+                      <th>Holiday</th>
+                      <th>Country</th>
+                      <th>Location</th>
+                      <th>Date</th>
+                      <th>Type</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="holidayPolicyList"></tbody>
+                </table>
+              </div>
+            </article>
           </section>
 
           <section id="teamLeavePanel" class="glass-card admin-panel hidden">
@@ -779,7 +814,7 @@
   </div>
 
   <div id="toast" class="toast hidden"></div>
-  <script src="/static/app.js?v=20260514-employee-names"></script>
+  <script src="/static/app.js?v=20260514-leave-settings"></script>
 </body>
 
 </html>
