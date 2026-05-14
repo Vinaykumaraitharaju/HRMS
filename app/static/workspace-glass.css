@@ -2338,35 +2338,84 @@ body[data-view="profile"] .workspace-view:not(.hidden) {
 }
 
 .profile-grid {
+  grid-template-columns: minmax(320px, 1.05fr) minmax(300px, 0.72fr);
+  grid-auto-rows: auto;
   align-items: start;
+  gap: 14px;
 }
 
 .profile-grid > .glass-card:first-child {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   align-content: start;
   gap: 12px;
-  min-height: 150px;
+  min-height: 0;
+  padding: 16px;
 }
 
 .profile-grid > .glass-card:first-child .profile-photo {
-  grid-row: 1 / span 2;
-  width: 64px;
-  height: 64px;
+  width: 72px;
+  height: 72px;
   border-radius: 18px;
 }
 
-.profile-grid > .glass-card:first-child .primary-action {
-  justify-self: start;
+.profile-identity {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
 }
 
-.profile-grid > .glass-card:first-child .profile-note {
-  align-self: center;
+.profile-identity strong {
+  color: var(--ink);
+  font-size: 18px;
+  line-height: 1.15;
+}
+
+.profile-identity span,
+.profile-identity small {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.profile-grid > .glass-card:first-child .primary-action {
+  justify-self: end;
+  white-space: nowrap;
+}
+
+.profile-grid .form-card {
+  gap: 10px;
+  padding: 16px;
+}
+
+.profile-grid .form-card h3 {
+  margin: 0 0 4px;
+  color: var(--ink);
+  font-size: 18px;
+}
+
+.profile-grid .form-card input {
+  min-height: 42px;
+}
+
+#profileDetailsCard {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}
+
+#profileDetailsCard label input[readonly] {
+  background: var(--surface-soft);
+  color: var(--ink);
 }
 
 #profileSecurityCard {
   grid-column: 1;
+  grid-row: 2;
+}
+
+#profileSecurityCard .primary-action,
+#profileDetailsCard .primary-action {
+  min-height: 42px;
 }
 
 .activity-list {
@@ -3633,6 +3682,21 @@ body[data-view="calendar"] .pulse-suite-nav.glass-panel {
 
   .team-leave-row {
     grid-template-columns: 1fr;
+  }
+
+  #profileDetailsCard,
+  #profileSecurityCard {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .profile-grid > .glass-card:first-child {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .profile-grid > .glass-card:first-child .primary-action {
+    grid-column: 1 / -1;
+    justify-self: start;
   }
 
   .policy-row-actions,

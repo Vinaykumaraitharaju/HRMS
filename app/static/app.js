@@ -363,6 +363,8 @@ const profileHeaderAvatar = document.querySelector(".profile-button .avatar");
 const profilePhotoInput = document.querySelector("#profilePhotoInput");
 const profilePhotoPreview = document.querySelector("#profilePhotoPreview");
 const profilePhotoUpload = document.querySelector("#profilePhotoUpload");
+const profileIdentityName = document.querySelector("#profileIdentityName");
+const profileIdentityTitle = document.querySelector("#profileIdentityTitle");
 const profileEmployeeIdInput = document.querySelector("#profileEmployeeIdInput");
 const profileEmailInput = document.querySelector("#profileEmailInput");
 const profileMobileInput = document.querySelector("#profileMobileInput");
@@ -1974,6 +1976,8 @@ function applyRoleWorkspace() {
   if (profileSmall) profileSmall.textContent = currentRoleProfile.title;
   const profileEmail = profileDropdown.querySelector("strong");
   if (profileEmail) profileEmail.textContent = currentRoleProfile.email;
+  if (profileIdentityName) profileIdentityName.textContent = currentRoleProfile.name;
+  if (profileIdentityTitle) profileIdentityTitle.textContent = currentRoleProfile.title;
   const welcomeTitle = document.querySelector("#dashboardSection h1");
   const welcomeNote = document.querySelector("#dashboardSection .welcome-note");
   if (welcomeTitle) welcomeTitle.textContent = currentRoleProfile.headline;

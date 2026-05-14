@@ -5,7 +5,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Wavelynk HRMS</title>
-  <link rel="stylesheet" href="/static/workspace-glass.css?v=20260513-timesheet-control" />
+  <link rel="stylesheet" href="/static/workspace-glass.css?v=20260513-profile-layout" />
 </head>
 
 <body>
@@ -196,8 +196,12 @@
             <article class="glass-card">
               <button id="profilePhotoPreview" class="profile-photo" type="button">E</button>
               <input id="profilePhotoInput" type="file" accept="image/*" hidden />
+              <div class="profile-identity">
+                <strong id="profileIdentityName">Employee</strong>
+                <span id="profileIdentityTitle">Profile settings</span>
+                <small class="profile-note">Photo is saved only for your account.</small>
+              </div>
               <button id="profilePhotoUpload" class="primary-action" type="button">Upload photo</button>
-              <small class="profile-note">Photo is saved only for your account.</small>
             </article>
             <article id="profileDetailsCard" class="glass-card form-card">
               <h3>Profile details</h3>
@@ -774,7 +778,7 @@
   </div>
 
   <div id="toast" class="toast hidden"></div>
-  <script src="/static/app.js?v=20260513-timesheet-control"></script>
+  <script src="/static/app.js?v=20260513-profile-layout"></script>
 </body>
 
 </html>
