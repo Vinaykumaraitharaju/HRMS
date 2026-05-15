@@ -5137,13 +5137,14 @@ function renderLeave() {
         const tones = ["approved", "pending", "rejected"];
         const name = item?.label || "Leave";
         const balance = Number(item?.remaining || 0);
+        const allocated = Number(item?.allocated || 0);
 
         return `
               <div class="leave-hub-legend-card">
                 <span class="leave-dot ${tones[index] || "approved"}"></span>
                 <div class="leave-info">
-                  <strong>${name}</strong>
-                  <small>${balance} day${balance === 1 ? "" : "s"}</small>
+                  <strong>${escapeHtml(name)}</strong>
+                  <small>${balance}/${allocated} days left</small>
                 </div>
               </div>
             `;
@@ -5189,13 +5190,13 @@ function renderLeave() {
 
         return `
             <tr>
-              <td class="leave-type">${type}</td>
+              <td class="leave-type">${escapeHtml(type)}</td>
               <td class="leave-date">
                 ${formatDateRange(start, end)}
               </td>
               <td class="leave-days">${days}</td>
               <td class="leave-status">
-                <span class="status ${statusClass(status)}">${status}</span>
+                <span class="status ${statusClass(status)}">${escapeHtml(status)}</span>
               </td>
             </tr>
           `;

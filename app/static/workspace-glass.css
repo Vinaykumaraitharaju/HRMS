@@ -950,15 +950,86 @@ body[data-view="calendar"] .workspace-view:not(.hidden) {
   overflow-x: hidden !important;
 }
 
+.leave-card .card-head {
+  margin-bottom: 8px;
+}
+
+.leave-card .leave-legend {
+  gap: 8px;
+  margin: 8px 0 10px;
+}
+
+.leave-card .leave-hub-legend-grid {
+  gap: 8px;
+}
+
+.leave-card .leave-hub-legend-card {
+  grid-template-columns: 10px minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  min-height: 0;
+  padding: 10px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: none;
+}
+
+.leave-card .leave-info {
+  gap: 2px;
+}
+
+.leave-card .leave-info strong {
+  color: #fff;
+  font-size: 14px;
+}
+
+.leave-card .leave-info small {
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 12px;
+}
+
+.leave-card .leave-dot {
+  width: 8px;
+  height: 8px;
+  margin-top: 4px;
+}
+
 .leave-card .compact-table {
   min-width: 0;
   table-layout: fixed;
+  font-size: 13px;
 }
 
 .leave-card .compact-table td {
-  padding: 10px 8px;
+  padding: 7px 8px;
   white-space: normal;
   overflow-wrap: anywhere;
+  vertical-align: middle;
+}
+
+.leave-card .compact-table td:nth-child(1) {
+  width: 28%;
+}
+
+.leave-card .compact-table td:nth-child(2) {
+  width: 31%;
+}
+
+.leave-card .compact-table td:nth-child(3) {
+  width: 10%;
+  text-align: center;
+}
+
+.leave-card .compact-table td:nth-child(4) {
+  width: 31%;
+  text-align: right;
+}
+
+.leave-card .status {
+  max-width: 100%;
+  padding: 5px 9px;
+  font-size: 11px;
+  white-space: normal;
 }
 
 .leave-legend span {
