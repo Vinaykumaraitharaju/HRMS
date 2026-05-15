@@ -4133,7 +4133,7 @@ function renderBreakTypes() {
   if (!breakTypeGrid) return;
   breakTypeGrid.innerHTML = breakPolicyTypes
     .map(([label, note, value]) => `
-      <button class="quick-action-card break-type-card" type="button" data-break-type="${value}">
+      <button class="break-type-card" type="button" data-break-type="${value}">
         <strong>${label}</strong>
         <small>${note}</small>
       </button>`)

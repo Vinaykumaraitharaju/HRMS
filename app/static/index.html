@@ -5,7 +5,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Wavelynk HRMS</title>
-  <link rel="stylesheet" href="/static/workspace-glass.css?v=20260515-team-leave-details" />
+  <link rel="stylesheet" href="/static/workspace-glass.css?v=20260515-break-modal" />
 </head>
 
 <body>
@@ -795,13 +795,15 @@
     </div>
   </div>
 
-  <div id="breakModal" class="modal hidden">
-    <div class="modal-card glass-panel">
-      <div class="card-head">
+  <div id="breakModal" class="modal break-modal hidden">
+    <div class="modal-card glass-panel break-modal-card">
+      <div class="card-head break-modal-head">
         <h2>Start break</h2><button id="closeBreakModal" type="button">Close</button>
       </div>
       <div id="breakTypeGrid" class="break-grid"></div>
-      <button id="cancelBreakModal" type="button">Cancel</button>
+      <div class="break-modal-actions">
+        <button id="cancelBreakModal" type="button">Cancel</button>
+      </div>
     </div>
   </div>
 
@@ -846,7 +848,7 @@
   </div>
 
   <div id="toast" class="toast hidden"></div>
-  <script src="/static/app.js?v=20260515-team-leave-details"></script>
+  <script src="/static/app.js?v=20260515-break-modal"></script>
 </body>
 
 </html>

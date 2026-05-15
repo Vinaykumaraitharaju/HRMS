@@ -3671,6 +3671,88 @@ body[data-view="calendar"] .pulse-suite-nav.glass-panel {
   text-align: left;
 }
 
+.break-modal {
+  background: rgba(6, 25, 74, 0.36);
+}
+
+.break-modal-card {
+  width: min(560px, calc(100vw - 32px));
+  padding: 18px;
+  border-radius: 18px;
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.break-modal-head {
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.break-modal-head h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 22px;
+}
+
+.break-modal-head button,
+.break-modal-actions button {
+  width: auto;
+  min-height: 38px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: var(--surface-soft);
+  color: var(--ink);
+  font-weight: 900;
+}
+
+#breakTypeGrid.break-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+#breakTypeGrid .break-type-card {
+  display: grid;
+  gap: 6px;
+  min-height: 88px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-soft);
+  color: var(--ink);
+  text-align: left;
+  box-shadow: none;
+}
+
+#breakTypeGrid .break-type-card strong {
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 900;
+}
+
+#breakTypeGrid .break-type-card small {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+#breakTypeGrid .break-type-card:hover {
+  border-color: rgba(0, 106, 111, 0.34);
+  background: var(--teal-soft);
+}
+
+.break-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 14px;
+}
+
+body.dark-mode .break-modal-card {
+  background: var(--surface);
+  color: var(--ink);
+}
+
 .person-result.selected {
   background: var(--teal-soft);
   border-color: rgba(0, 106, 111, 0.3);
