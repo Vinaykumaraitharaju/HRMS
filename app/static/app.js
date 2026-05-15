@@ -1400,7 +1400,21 @@ function renderNotificationDropdown() {
     ? window.hrmsNotifications
     : [];
 
-  if (!notifications.length) {
+  const visibleNotifications = [];
+  const seenNotifications = new Set();
+  notifications.forEach((item) => {
+    const copy = notificationDisplayCopy(item);
+    const key = [
+      copy.title,
+      copy.body,
+      formatNotificationDate(item.created_at),
+    ].join("|").toLowerCase();
+    if (seenNotifications.has(key)) return;
+    seenNotifications.add(key);
+    visibleNotifications.push({ item, copy });
+  });
+
+  if (!visibleNotifications.length) {
     list.innerHTML = `
       <div class="notification-empty">
         <strong>No notifications</strong>
@@ -1410,16 +1424,15 @@ function renderNotificationDropdown() {
     return;
   }
 
-  list.innerHTML = notifications
-    .map((item) => {
+  list.innerHTML = visibleNotifications
+    .map(({ item, copy }) => {
       const priority = item.priority || "info";
       const unreadClass = item.read_at ? "read" : "unread";
-      const copy = notificationDisplayCopy(item);
 
       return `
         <button class="notification-menu-item ${priority} ${unreadClass}" type="button" data-notification-id="${item.id}">
           <span class="notification-dot"></span>
-          <span>
+          <span class="notification-menu-copy">
             <strong>${escapeHtml(copy.title)}</strong>
             <small>${escapeHtml(copy.body)}</small>
             <em>${formatNotificationDate(item.created_at)}</em>

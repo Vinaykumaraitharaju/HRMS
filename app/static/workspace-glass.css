@@ -282,18 +282,19 @@ body.dark-mode .top-search input {
 }
 
 .notification-dropdown {
-  width: min(380px, calc(100vw - 32px));
+  width: min(430px, calc(100vw - 32px));
   max-height: min(560px, calc(100vh - 96px));
   overflow: hidden;
+  padding: 14px;
 }
 
 .notification-menu-list {
   display: grid;
-  gap: 8px;
+  gap: 10px;
   max-height: min(460px, calc(100vh - 180px));
   overflow-y: auto;
   overflow-x: hidden;
-  padding-right: 4px;
+  padding: 2px 4px 2px 0;
 }
 
 .dropdown-menu button,
@@ -308,8 +309,11 @@ body.dark-mode .top-search input {
 .notification-menu-item {
   display: grid;
   grid-template-columns: 10px minmax(0, 1fr);
-  align-items: start;
-  gap: 10px;
+  align-items: flex-start;
+  gap: 12px;
+  min-height: 86px;
+  border: 1px solid var(--line);
+  background: var(--surface-soft);
 }
 
 .notification-menu-item strong,
@@ -318,12 +322,77 @@ body.dark-mode .top-search input {
   min-width: 0;
 }
 
+.notification-menu-copy {
+  display: grid;
+  gap: 4px;
+}
+
+.notification-menu-copy strong {
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.25;
+}
+
+.notification-menu-copy small {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.notification-menu-copy em {
+  color: var(--muted);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 800;
+}
+
 .notification-dot {
   width: 8px;
   height: 8px;
   margin-top: 5px;
   border-radius: 50%;
   background: var(--teal);
+}
+
+.notification-menu-item.read .notification-dot {
+  opacity: 0;
+}
+
+.notification-menu-item.unread {
+  border-color: rgba(0, 106, 111, 0.28);
+}
+
+.notification-menu-item.warning,
+.notification-menu-item.error {
+  border-left: 4px solid var(--rose);
+}
+
+.notification-menu-item.success {
+  border-left: 4px solid var(--green);
+}
+
+.notification-menu-item.info {
+  border-left: 4px solid var(--teal);
+}
+
+.notification-menu-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding-bottom: 10px;
+  background: var(--surface);
+}
+
+.notification-menu-head button {
+  width: auto;
+  min-height: 36px;
+  padding: 7px 12px;
+  border-radius: 12px;
+  background: var(--surface-soft);
+  color: var(--ink);
+  font-weight: 800;
+  white-space: nowrap;
 }
 
 .notification-menu-head,
