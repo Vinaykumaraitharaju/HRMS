@@ -100,20 +100,20 @@ const employeeNavSections = [
   ["", [["Dashboard", "D"], ["Chat", "C", "8"], ["Timesheet", "S"]]],
   ["Leave Management", [["Apply Leave", "+"]]],
   ["Requests", [["My Requests", "R"], ["Expense Claims", "$"]]],
-  ["Others", [["Notifications", "N", "5"], ["Settings", "G"]]],
+  ["Others", [["Notifications", "N"], ["Settings", "G"]]],
 ];
 
 const managerNavSections = [
   ["", [["Dashboard", "D"], ["Chat", "C", "8"], ["Timesheet", "S"]]],
   ["Leave Management", [["Apply Leave", "+"], ["Team Leaves", "A"]]],
-  ["Others", [["Notifications", "N", "5"], ["Settings", "G"]]],
+  ["Others", [["Notifications", "N"], ["Settings", "G"]]],
 ];
 
 const hrNavSections = [
   ["", [["Dashboard", "D"], ["Chat", "C", "8"], ["Timesheet", "S"]]],
   ["People Ops", [["Employees", "E"], ["Roles & Access", "R"], ["Leave Policies", "L"]]],
   ["Leave Management", [["Apply Leave", "+"], ["Team Leaves", "A"]]],
-  ["Others", [["Notifications", "N", "5"], ["Settings", "G"]]],
+  ["Others", [["Notifications", "N"], ["Settings", "G"]]],
 ];
 
 const adminNavSections = [
@@ -121,7 +121,7 @@ const adminNavSections = [
   ["People Ops", [["Employees", "E"], ["Roles & Access", "R"], ["Leave Policies", "L"]]],
   ["Leave Management", [["Apply Leave", "+"], ["Team Leaves", "A"]]],
   ["Attendance & Time", [["Timesheet Control", "T"], ["Audit Logs", "G"]]],
-  ["Others", [["Notifications", "N", "5"], ["Settings", "G"]]],
+  ["Others", [["Notifications", "N"], ["Settings", "G"]]],
 ];
 
 const roleHierarchyRank = {
@@ -1350,10 +1350,28 @@ async function loadNotificationState() {
 function updateNotificationBadge() {
   const notificationBadge = notificationToggle?.querySelector(".notification-badge");
 
-  if (!notificationBadge) return;
+  if (notificationBadge) {
+    notificationBadge.textContent = String(unreadNotificationCount);
+    notificationBadge.classList.toggle("hidden", unreadNotificationCount <= 0);
+  }
 
-  notificationBadge.textContent = String(unreadNotificationCount);
-  notificationBadge.classList.toggle("hidden", unreadNotificationCount <= 0);
+  updateSidebarNotificationBadge();
+}
+
+function updateSidebarNotificationBadge() {
+  const sidebarNotification = [...sidebarNav.querySelectorAll(".nav-item")]
+    .find((button) => button.dataset.label === "Notifications");
+  if (!sidebarNotification) return;
+
+  let badge = sidebarNotification.querySelector("em");
+  if (unreadNotificationCount > 0 && !badge) {
+    badge = document.createElement("em");
+    sidebarNotification.appendChild(badge);
+  }
+  if (badge) {
+    badge.textContent = String(unreadNotificationCount);
+    badge.classList.toggle("hidden", unreadNotificationCount <= 0);
+  }
 }
 
 function notificationDisplayCopy(item = {}) {
@@ -4492,7 +4510,11 @@ function renderSidebar() {
       <div class="nav-group">
         ${heading ? `<p>${displayHeadings[heading] || heading}</p>` : ""}
         ${items.map(([label, icon, badge]) => {
-      const dynamicBadge = label === "Chat" ? totalUnread : badge;
+      const dynamicBadge = label === "Chat"
+        ? totalUnread
+        : label === "Notifications"
+          ? unreadNotificationCount
+          : badge;
       const iconMap = {
         Dashboard: "D",
         Chat: "C",
@@ -6480,10 +6502,10 @@ function syncUnreadState() {
   syncPulseSuiteNav();
   const notificationBadge = notificationToggle.querySelector("span");
   if (notificationBadge) {
-    const badgeCount = Math.max(unreadNotificationCount, totalUnreadCount());
-    notificationBadge.textContent = String(badgeCount);
-    notificationBadge.classList.toggle("hidden", badgeCount <= 0);
+    notificationBadge.textContent = String(unreadNotificationCount);
+    notificationBadge.classList.toggle("hidden", unreadNotificationCount <= 0);
   }
+  updateSidebarNotificationBadge();
   const sidebarChat = [...sidebarNav.querySelectorAll(".nav-item")].find((button) => button.dataset.label === "Chat");
   if (sidebarChat) {
     let badge = sidebarChat.querySelector("em");
