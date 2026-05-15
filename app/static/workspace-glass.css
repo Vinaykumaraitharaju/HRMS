@@ -794,6 +794,14 @@ body[data-view="calendar"] .workspace-view:not(.hidden) {
   background: #76d9a2;
 }
 
+.work-state.warning {
+  color: #fff1c2;
+}
+
+.work-state.warning span {
+  background: var(--amber);
+}
+
 .hero-card strong {
   font-size: 26px;
 }

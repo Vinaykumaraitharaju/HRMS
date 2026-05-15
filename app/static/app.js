@@ -337,6 +337,8 @@ const attendanceConfig = {
   shiftStart: "10:00 PM",
   shiftEnd: "07:00 AM",
   shiftEditor: "Set by admin",
+  earlyGraceMinutes: 120,
+  lateGraceMinutes: 120,
 };
 
 const breakPolicyTypes = [
@@ -4228,6 +4230,108 @@ function currentTimeLabel(value = new Date()) {
   });
 }
 
+function parseShiftClock(value = "00:00") {
+  const text = String(value || "").trim();
+  const match = text.match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?$/i);
+  if (!match) return { hours: 0, minutes: 0 };
+  let hours = Number(match[1] || 0);
+  const minutes = Number(match[2] || 0);
+  const meridiem = match[3]?.toUpperCase();
+  if (meridiem === "PM" && hours < 12) hours += 12;
+  if (meridiem === "AM" && hours === 12) hours = 0;
+  return { hours: hours % 24, minutes };
+}
+
+function shiftDateTime(baseDate, clockText) {
+  const { hours, minutes } = parseShiftClock(clockText);
+  const date = new Date(baseDate);
+  date.setHours(hours, minutes, 0, 0);
+  return date;
+}
+
+function currentShiftWindow(now = new Date()) {
+  const startClock = parseShiftClock(attendanceConfig.shiftStart);
+  const endClock = parseShiftClock(attendanceConfig.shiftEnd);
+  const startMinutes = startClock.hours * 60 + startClock.minutes;
+  const endMinutes = endClock.hours * 60 + endClock.minutes;
+  const crossesMidnight = endMinutes <= startMinutes;
+  const todayStart = shiftDateTime(now, attendanceConfig.shiftStart);
+  let start = todayStart;
+  let end = shiftDateTime(now, attendanceConfig.shiftEnd);
+
+  if (crossesMidnight) {
+    const todayMinutes = now.getHours() * 60 + now.getMinutes();
+    if (todayMinutes < startMinutes) {
+      start = shiftDateTime(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1), attendanceConfig.shiftStart);
+      end = shiftDateTime(now, attendanceConfig.shiftEnd);
+    } else {
+      end = shiftDateTime(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1), attendanceConfig.shiftEnd);
+    }
+  }
+
+  const graceStart = new Date(start.getTime() - Number(attendanceConfig.earlyGraceMinutes || 0) * 60000);
+  const graceEnd = new Date(end.getTime() + Number(attendanceConfig.lateGraceMinutes || 0) * 60000);
+  return { start, end, graceStart, graceEnd, crossesMidnight };
+}
+
+function minutesOverlap(start, end, windowStart, windowEnd) {
+  const from = Math.max(start?.getTime?.() || 0, windowStart?.getTime?.() || 0);
+  const to = Math.min(end?.getTime?.() || 0, windowEnd?.getTime?.() || 0);
+  return Math.max(0, Math.floor((to - from) / 60000));
+}
+
+function currentSessionMinutes(now = new Date()) {
+  if (!attendanceState.loggedIn || !attendanceState.loginAt) return 0;
+  return Math.max(
+    0,
+    Math.floor((now.getTime() - new Date(attendanceState.loginAt).getTime()) / 60000)
+  );
+}
+
+function shiftWorkedMinutes(now = new Date()) {
+  const { start, end } = currentShiftWindow(now);
+  let total = 0;
+  let openLoginAt = null;
+  const logs = [...(window.attendanceLogs || [])].sort(
+    (a, b) => parseAttendanceDate(a.captured_at) - parseAttendanceDate(b.captured_at)
+  );
+
+  logs.forEach((log) => {
+    const capturedAt = parseAttendanceDate(log.captured_at);
+    if (!capturedAt) return;
+    if (log.action === "login") {
+      openLoginAt = capturedAt;
+      return;
+    }
+    if (log.action === "logout" && openLoginAt) {
+      total += minutesOverlap(openLoginAt, capturedAt, start, end);
+      openLoginAt = null;
+    }
+  });
+
+  if (attendanceState.loggedIn && attendanceState.loginAt) {
+    total += minutesOverlap(new Date(attendanceState.loginAt), now, start, end);
+  }
+
+  return total;
+}
+
+function isStaleOpenSession(now = new Date()) {
+  if (!attendanceState.loggedIn || !attendanceState.loginAt) return false;
+  const { graceEnd } = currentShiftWindow(now);
+  return new Date(attendanceState.loginAt) < graceEnd && now > graceEnd;
+}
+
+function formatSessionDuration(minutes) {
+  const safeMinutes = Math.max(0, Math.floor(Number(minutes || 0)));
+  const days = Math.floor(safeMinutes / 1440);
+  const hours = Math.floor((safeMinutes % 1440) / 60);
+  const mins = safeMinutes % 60;
+  return days > 0
+    ? `${days}d ${hours}h ${String(mins).padStart(2, "0")}m`
+    : `${hours}h ${String(mins).padStart(2, "0")}m`;
+}
+
 function formatBreakType(value = attendanceState.activeBreakType) {
   const item = breakPolicyTypes.find(([, , type]) => type === value);
   return item?.[0] || String(value || "Break").replace(/\b\w/g, (letter) => letter.toUpperCase());
@@ -4284,7 +4388,10 @@ function updateAttendancePriority() {
   }
 
   if (attendanceState.loggedIn) {
-    attendancePriority.textContent = "Shift timer is running";
+    attendancePriority.textContent = isStaleOpenSession()
+      ? "Previous shift still open - verify logout"
+      : "Shift timer is running";
+    attendancePriority.classList.toggle("warning", isStaleOpenSession());
     return;
   }
 
@@ -8080,18 +8187,7 @@ function bindCallButtons() {
   });
 }
 function workedMinutesToday(now = new Date()) {
-  const completedMinutes = Number(attendanceState.todayWorkedMinutes || 0);
-
-  if (!attendanceState.loggedIn || !attendanceState.loginAt) {
-    return completedMinutes;
-  }
-
-  const runningMinutes = Math.max(
-    0,
-    Math.floor((now.getTime() - new Date(attendanceState.loginAt).getTime()) / 60000)
-  );
-
-  return completedMinutes + runningMinutes;
+  return shiftWorkedMinutes(now);
 }
 
 function formatWorkedDuration(minutes) {
@@ -8123,21 +8219,21 @@ function updateClock() {
     minute: "2-digit",
   });
 
-  const totalToday = workedMinutesToday(now);
+  const totalShift = workedMinutesToday(now);
 
   if (attendanceState.loggedIn && attendanceState.loginAt) {
-    const currentSessionMinutes = Math.max(
-      0,
-      Math.floor((now.getTime() - new Date(attendanceState.loginAt).getTime()) / 60000)
-    );
+    const sessionMinutes = currentSessionMinutes(now);
+    const staleSession = isStaleOpenSession(now);
 
     workState.classList.add("active");
-    workState.innerHTML = `<span></span>Logged in - Today ${formatWorkedDuration(totalToday)} - Session ${formatWorkedDuration(currentSessionMinutes)}`;
+    workState.classList.toggle("warning", staleSession);
+    workState.innerHTML = `<span></span>Logged in - Shift ${formatWorkedDuration(totalShift)} - Session ${formatSessionDuration(sessionMinutes)}${staleSession ? " - verify logout" : ""}`;
   } else if (workState) {
     workState.classList.remove("active");
+    workState.classList.remove("warning");
 
     if (attendanceState.logoutAt) {
-      workState.innerHTML = `<span></span>Logged out - Today ${formatWorkedDuration(totalToday)}`;
+      workState.innerHTML = `<span></span>Logged out - Shift ${formatWorkedDuration(totalShift)}`;
     } else {
       workState.innerHTML = "<span></span>Not logged in";
     }
