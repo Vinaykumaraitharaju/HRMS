@@ -655,6 +655,20 @@ const defaultLeaveTypes = [
   { name: "Paternity Leave", balance: 10, approvalFlow: "Manager then HR" },
 ];
 
+const leaveReasonCategoriesByType = {
+  sick: ["Medical", "Doctor consultation", "Hospitalization", "Recovery", "Family medical care"],
+  casual: ["Personal", "Family event", "Emergency", "Travel"],
+  el: ["Planned vacation", "Personal", "Family event", "Travel"],
+  "annual": ["Planned vacation", "Personal", "Family event", "Travel"],
+  "flexi (optional holiday)": ["Optional holiday", "Festival", "Personal"],
+  "comp off": ["Worked extra day", "Weekend work", "Holiday work"],
+  bereavement: ["Bereavement", "Funeral", "Family emergency"],
+  maternity: ["Maternity", "Medical", "Childcare"],
+  paternity: ["Paternity", "Childcare", "Family support"],
+};
+
+const defaultLeaveReasonCategories = ["Personal", "Family event", "Medical", "Travel", "Emergency"];
+
 const publicHolidays = [
   { date: "2026-05-01", name: "Labour Day" },
   { date: "2026-05-14", name: "Public Holiday" },
@@ -3222,6 +3236,23 @@ function renderLeaveTypeOptions() {
     : (types[0]?.name || "");
 }
 
+function reasonCategoriesForLeaveType(leaveType = "") {
+  const key = normalizeLeaveTypeKey(leaveType);
+  return leaveReasonCategoriesByType[key] || defaultLeaveReasonCategories;
+}
+
+function renderLeaveReasonCategoryOptions() {
+  if (!leaveReasonCategoryInput) return;
+  const currentValue = leaveReasonCategoryInput.value;
+  const categories = reasonCategoriesForLeaveType(leaveTypeInput?.value);
+  leaveReasonCategoryInput.innerHTML = categories
+    .map((category) => `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`)
+    .join("");
+  leaveReasonCategoryInput.value = categories.includes(currentValue)
+    ? currentValue
+    : (categories[0] || "");
+}
+
 function countryForLocation(location = "") {
   const found = Object.entries(holidayLocationsByCountry)
     .find(([, locations]) => locations.includes(location));
@@ -5734,6 +5765,7 @@ function leaveCalendarTag(request, holiday, dateText) {
 function renderLeaveWorkspace() {
   if (!leaveRequestList || !leaveBalanceGrid) return;
   renderLeaveTypeOptions();
+  renderLeaveReasonCategoryOptions();
   const pendingRequests = (leaveTrackerRequests || []).filter((item) => safeStatus(item?.status).startsWith("Pending") || safeStatus(item?.status).startsWith("Revoke Pending"));
   const pendingCount = pendingRequests.length;
   const pendingDays = pendingRequests.reduce((sum, item) => sum + Number(item?.days || 0), 0);
@@ -5899,7 +5931,7 @@ function submitLeaveApplication() {
 function resetLeaveApplicationForm() {
   renderLeaveTypeOptions();
   leaveTypeInput.value = activeLeaveTypes()[0].name || "";
-  leaveReasonCategoryInput.value = "Family event";
+  renderLeaveReasonCategoryOptions();
   leaveStartInput.value = "";
   leaveEndInput.value = "";
   leaveReasonInput.value = "";
@@ -7501,6 +7533,10 @@ function bindInteractions() {
   leaveStartInput?.addEventListener("change", syncLeaveRangeFromInputs);
   leaveEndInput?.addEventListener("change", syncLeaveRangeFromInputs);
   submitLeaveRequest?.addEventListener("click", submitLeaveApplication);
+  leaveTypeInput?.addEventListener("change", () => {
+    renderLeaveReasonCategoryOptions();
+    renderLeaveWorkspace();
+  });
   resetLeaveForm?.addEventListener("click", resetLeaveApplicationForm);
   leaveMonthPrev?.addEventListener("click", () => {
     leaveCalendarMonth = new Date(leaveCalendarMonth.getFullYear(), leaveCalendarMonth.getMonth() - 1, 1);
