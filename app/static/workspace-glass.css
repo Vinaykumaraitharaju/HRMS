@@ -2006,6 +2006,7 @@ label {
 .team-leave-table {
   min-width: 1180px;
   table-layout: fixed;
+  border-spacing: 0;
 }
 
 .team-leave-table thead th {
@@ -2013,6 +2014,15 @@ label {
   top: 0;
   z-index: 3;
   border-bottom: 1px solid var(--line);
+}
+
+.team-leave-table tbody tr.selected,
+.team-leave-table tbody tr.selected:hover {
+  background: rgba(0, 106, 111, 0.08);
+}
+
+.team-leave-table tbody td {
+  vertical-align: middle;
 }
 
 .team-leave-table th:nth-child(1),
@@ -2039,7 +2049,7 @@ label {
 
 .team-leave-table th:nth-child(7),
 .team-leave-table td:nth-child(7) {
-  width: 220px;
+  width: 260px;
 }
 
 .team-leave-person {
@@ -2077,6 +2087,17 @@ label {
   line-height: 1.35;
 }
 
+.team-leave-table .policy-row-actions {
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+}
+
+.team-leave-table .policy-row-actions button {
+  min-height: 36px;
+  padding: 7px 10px;
+  white-space: nowrap;
+}
+
 .team-leave-reason {
   display: -webkit-box;
   max-height: 42px;
@@ -2110,6 +2131,79 @@ label {
   font-size: 12px;
   font-weight: 800;
   white-space: nowrap;
+}
+
+.team-leave-detail-panel {
+  display: grid;
+  gap: 14px;
+  margin-top: 14px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.team-leave-detail-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.team-leave-detail-head h3 {
+  margin: 4px 0;
+  color: var(--ink);
+  font-size: 20px;
+}
+
+.team-leave-detail-head p {
+  margin: 0;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.team-leave-detail-head button {
+  min-height: 38px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: var(--surface-soft);
+  color: var(--ink);
+  font-weight: 900;
+}
+
+.team-leave-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+}
+
+.team-leave-detail-grid span,
+.team-leave-detail-section {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-soft);
+}
+
+.team-leave-detail-grid small,
+.team-leave-detail-section small {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.team-leave-detail-grid strong {
+  color: var(--ink);
+}
+
+.team-leave-detail-section p {
+  margin: 0;
+  color: var(--ink);
+  line-height: 1.5;
 }
 
 .leave-policy-section {

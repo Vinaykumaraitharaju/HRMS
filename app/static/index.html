@@ -5,7 +5,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Wavelynk HRMS</title>
-  <link rel="stylesheet" href="/static/workspace-glass.css?v=20260514-leave-settings" />
+  <link rel="stylesheet" href="/static/workspace-glass.css?v=20260515-team-leave-details" />
 </head>
 
 <body>
@@ -462,11 +462,11 @@
               <label>View
                 <select id="teamLeaveStatusFilter">
                   <option value="pending-me">Pending me</option>
-                  <option value="all">All requests</option>
                   <option value="pending">All pending</option>
                   <option value="approved">Approved</option>
                   <option value="rejected">Rejected</option>
-                  <option value="revoked">Revoked</option>
+                  <option value="revoked">Revoked / revoke flow</option>
+                  <option value="all">All requests</option>
                 </select>
               </label>
               <label>Search
@@ -490,6 +490,7 @@
                 <tbody id="teamLeaveRows"></tbody>
               </table>
             </div>
+            <aside id="teamLeaveDetailPanel" class="team-leave-detail-panel hidden" aria-live="polite"></aside>
           </section>
 
           <section id="timesheetControlPanel" class="glass-card admin-panel hidden">
@@ -845,7 +846,7 @@
   </div>
 
   <div id="toast" class="toast hidden"></div>
-  <script src="/static/app.js?v=20260514-leave-settings"></script>
+  <script src="/static/app.js?v=20260515-team-leave-details"></script>
 </body>
 
 </html>

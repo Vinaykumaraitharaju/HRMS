@@ -192,6 +192,7 @@ const roleProfiles = {
 let currentRole = "employee";
 let currentRoleProfile = roleProfiles.employee;
 let teamLeaveRequests = [];
+let selectedTeamLeaveRequestId = null;
 document.body.dataset.view = "dashboard";
 if (localStorage.getItem("hrms_theme") === "dark") {
   document.body.classList.add("dark-mode");
@@ -442,6 +443,7 @@ const refreshTeamLeaveRequests = document.querySelector("#refreshTeamLeaveReques
 const teamLeaveSearchInput = document.querySelector("#teamLeaveSearchInput");
 const teamLeaveStatusFilter = document.querySelector("#teamLeaveStatusFilter");
 const teamLeaveCountBadge = document.querySelector("#teamLeaveCountBadge");
+const teamLeaveDetailPanel = document.querySelector("#teamLeaveDetailPanel");
 const leavePolicyForm = document.querySelector("#leavePolicyForm");
 const annualBalanceInput = document.querySelector("#annualBalanceInput");
 const casualBalanceInput = document.querySelector("#casualBalanceInput");
@@ -3384,13 +3386,15 @@ function filteredTeamLeaveRequests() {
 
   return teamLeaveRequests.filter((request) => {
     const status = safeStatus(request?.status).toLowerCase();
+    const isPending = status.startsWith("pending") || status.startsWith("revoke pending");
+    const isRevoked = status === "revoked" || status.startsWith("revoke pending");
     const matchesFilter =
       filter === "all"
       || (filter === "pending-me" && canActOnAnyTeamLeaveStep(request))
-      || (filter === "pending" && (status.startsWith("pending") || status.startsWith("revoke pending")))
+      || (filter === "pending" && isPending)
       || (filter === "approved" && status === "approved")
       || (filter === "rejected" && status === "rejected")
-      || (filter === "revoked" && status === "revoked");
+      || (filter === "revoked" && isRevoked);
 
     if (!matchesFilter) return false;
     if (!search) return true;
@@ -3410,6 +3414,46 @@ function filteredTeamLeaveRequests() {
 
     return haystack.includes(search);
   });
+}
+
+function renderTeamLeaveDetail(request) {
+  if (!teamLeaveDetailPanel) return;
+  if (!request) {
+    teamLeaveDetailPanel.classList.add("hidden");
+    teamLeaveDetailPanel.innerHTML = "";
+    return;
+  }
+  const employee = adminEmployees.find((item) => Number(item.id) === Number(request.employeeId));
+  const requester = request.requesterName || employee?.name || "Employee";
+  const requesterCode = request.requesterCode || employee?.employeeId || `#${request.employeeId || ""}`;
+  const trail = teamLeaveApprovalTrail(request);
+  teamLeaveDetailPanel.classList.remove("hidden");
+  teamLeaveDetailPanel.innerHTML = `
+    <div class="team-leave-detail-head">
+      <div>
+        <span class="eyebrow">Leave request</span>
+        <h3>${escapeHtml(requester)}</h3>
+        <p>${escapeHtml(requesterCode)} / ${escapeHtml(request.leaveId)}</p>
+      </div>
+      <button type="button" data-team-leave-close>Close</button>
+    </div>
+    <div class="team-leave-detail-grid">
+      <span><small>Type</small><strong>${escapeHtml(request.type)}</strong></span>
+      <span><small>Dates</small><strong>${formatDateRange(request.start, request.end)}</strong></span>
+      <span><small>Days</small><strong>${request.days}</strong></span>
+      <span><small>Status</small><strong><span class="status ${statusClass(request.status)}">${escapeHtml(request.status)}</span></strong></span>
+      <span><small>Pending with</small><strong>${pendingWithLabel(request.status)}</strong></span>
+      <span><small>Current role</small><strong>${escapeHtml(currentRoleProfile.label)}</strong></span>
+    </div>
+    <div class="team-leave-detail-section">
+      <small>Approval path</small>
+      <div class="approval-trail">${trail.map((step) => `<span>${escapeHtml(step)}</span>`).join("")}</div>
+    </div>
+    <div class="team-leave-detail-section">
+      <small>Reason</small>
+      <p>${escapeHtml(request.reason)}</p>
+    </div>
+  `;
 }
 
 async function loadTeamLeaveRequests() {
@@ -3442,6 +3486,11 @@ function renderTeamLeaveRequests() {
   if (teamLeaveCountBadge) {
     teamLeaveCountBadge.textContent = `Showing ${visibleRequests.length} of ${teamLeaveRequests.length}`;
   }
+  if (selectedTeamLeaveRequestId && !visibleRequests.some((request) => String(request.id) === String(selectedTeamLeaveRequestId))) {
+    selectedTeamLeaveRequestId = null;
+  }
+  const selectedRequest = visibleRequests.find((request) => String(request.id) === String(selectedTeamLeaveRequestId));
+  renderTeamLeaveDetail(selectedRequest || null);
   teamLeaveRows.innerHTML = visibleRequests.map((request) => {
     const employee = adminEmployees.find((item) => Number(item.id) === Number(request.employeeId));
     const requester = request.requesterName || employee?.name || "Employee";
@@ -3456,8 +3505,12 @@ function renderTeamLeaveRequests() {
     const rejectButton = canActOnTeamLeave(request, "reject")
       ? `<button type="button" data-team-leave-action="reject" data-team-leave-id="${request.id}">Reject</button>`
       : "";
+    const actionButtons = [supervisorButton, managerButton, rejectButton]
+      .filter(Boolean)
+      .join("");
+    const rowClass = String(request.id) === String(selectedTeamLeaveRequestId) ? " class=\"selected\"" : "";
     return `
-      <tr>
+      <tr${rowClass}>
         <td>
           <div class="team-leave-person">
             <span class="avatar">${safeInitials(requester)}</span>
@@ -3479,7 +3532,12 @@ function renderTeamLeaveRequests() {
         <td><span class="team-leave-reason">${escapeHtml(request.reason)}</span></td>
         <td><span class="status ${statusClass(request.status)}">${escapeHtml(request.status)}</span></td>
         <td>${pendingWithLabel(request.status)}</td>
-        <td><div class="policy-row-actions">${supervisorButton}${managerButton}${rejectButton || (!supervisorButton && !managerButton ? "<span class=\"muted-text\">No action</span>" : "")}</div></td>
+        <td>
+          <div class="policy-row-actions">
+            <button type="button" data-team-leave-view="${request.id}">View</button>
+            ${actionButtons || "<span class=\"muted-text\">No action</span>"}
+          </div>
+        </td>
       </tr>`;
   }).join("") || `<tr><td colspan="7">No team leave requests match this view.</td></tr>`;
 }
@@ -7354,11 +7412,26 @@ function bindInteractions() {
     });
   });
   teamLeaveSearchInput?.addEventListener("input", renderTeamLeaveRequests);
-  teamLeaveStatusFilter?.addEventListener("change", renderTeamLeaveRequests);
+  teamLeaveStatusFilter?.addEventListener("change", () => {
+    selectedTeamLeaveRequestId = null;
+    renderTeamLeaveRequests();
+  });
   teamLeaveRows?.addEventListener("click", (event) => {
+    const viewButton = event.target.closest("[data-team-leave-view]");
+    if (viewButton) {
+      selectedTeamLeaveRequestId = viewButton.dataset.teamLeaveView;
+      renderTeamLeaveRequests();
+      teamLeaveDetailPanel?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      return;
+    }
     const button = event.target.closest("[data-team-leave-action]");
     if (!button) return;
     decideTeamLeaveRequest(button.dataset.teamLeaveId, button.dataset.teamLeaveAction);
+  });
+  teamLeaveDetailPanel?.addEventListener("click", (event) => {
+    if (!event.target.closest("[data-team-leave-close]")) return;
+    selectedTeamLeaveRequestId = null;
+    renderTeamLeaveRequests();
   });
   leaveStartInput?.addEventListener("change", syncLeaveRangeFromInputs);
   leaveEndInput?.addEventListener("change", syncLeaveRangeFromInputs);
