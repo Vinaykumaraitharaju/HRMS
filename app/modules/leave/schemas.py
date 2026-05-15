@@ -35,6 +35,11 @@ class LeaveRead(BaseModel):
     supervisor_id: int | None
     manager_id: int | None
     decision_note: str | None
+    approval_flow: str | None = None
+    current_step: str | None = None
+    workflow_steps: list[str] | None = None
+    approval_history: list[dict] | None = None
+    revoke_rule: str | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True}

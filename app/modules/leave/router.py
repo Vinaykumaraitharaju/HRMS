@@ -178,11 +178,45 @@ async def manager_approve(
         details=payload.model_dump(),
     )
 
+    manager_forwarded_to_hr = str(getattr(leave.status, "value", leave.status)).replace("_", " ") == "pending hr"
     await _safe_notify(
         db=db,
         user_id=_leave_owner_id(leave),
-        title="Leave approved",
-        message="Your leave request has been approved by manager.",
+        title="Leave moved to HR" if manager_forwarded_to_hr else "Leave approved",
+        message=(
+            "Your leave request was approved by manager and moved to HR."
+            if manager_forwarded_to_hr
+            else "Your leave request has been approved by manager."
+        ),
+    )
+
+    return leave
+
+
+@router.post("/{leave_id}/hr-approve", response_model=LeaveRead)
+async def hr_approve(
+    leave_id: int,
+    payload: LeaveDecision,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(require_roles(Role.hr, Role.admin))],
+):
+    leave = await LeaveService(db).hr_approve(leave_id, current_user, payload)
+    await safe_record_audit(
+        db,
+        category="Leave",
+        action="leave.hr_approved",
+        message=f"Leave HR approved: #{leave.id}",
+        actor=current_user,
+        entity_type="leave",
+        entity_id=leave.id,
+        details=payload.model_dump(),
+    )
+
+    await _safe_notify(
+        db=db,
+        user_id=_leave_owner_id(leave),
+        title="Leave HR approved",
+        message="Your leave request has been approved by HR.",
     )
 
     return leave

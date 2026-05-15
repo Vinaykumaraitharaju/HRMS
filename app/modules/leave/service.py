@@ -1,10 +1,10 @@
-from datetime import date
+from datetime import date, datetime, timezone
 
 from fastapi import HTTPException, status
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.modules.auth.models import User
+from app.modules.auth.models import Role, RoleModel, User
 from app.modules.employees.models import Employee
 from app.modules.leave.models import LeavePolicySetting, LeaveRequest, LeaveStatus
 from app.modules.leave.schemas import LeaveApply, LeaveDecision, LeavePolicyState
@@ -35,6 +35,25 @@ DEFAULT_LEAVE_POLICY = {
         {"name": "Paternity Leave", "balance": 10, "approvalFlow": "Manager then HR"},
     ],
     "holidays": [],
+}
+
+APPROVAL_FLOW_STEPS = {
+    "No approval required": [],
+    "Manager only": ["manager"],
+    "Supervisor then Manager": ["supervisor", "manager"],
+    "Manager then HR": ["manager", "hr"],
+}
+
+STEP_STATUS = {
+    "supervisor": LeaveStatus.pending_supervisor,
+    "manager": LeaveStatus.pending_manager,
+    "hr": LeaveStatus.pending_hr,
+}
+
+REVOKE_STEP_STATUS = {
+    "supervisor": LeaveStatus.revoke_pending_supervisor,
+    "manager": LeaveStatus.revoke_pending_manager,
+    "hr": LeaveStatus.revoke_pending_manager,
 }
 
 
@@ -107,11 +126,9 @@ class LeaveService:
             )
 
         approval_flow = await self.approval_flow_for_type(leave_type)
-        initial_status = LeaveStatus.pending_supervisor
-        if approval_flow == "No approval required":
-            initial_status = LeaveStatus.approved
-        elif approval_flow in {"Manager only", "Manager then HR"}:
-            initial_status = LeaveStatus.pending_manager
+        workflow_steps = workflow_steps_for_flow(approval_flow)
+        current_step = workflow_steps[0] if workflow_steps else None
+        initial_status = status_for_workflow_step(current_step) if current_step else LeaveStatus.approved
 
         leave = LeaveRequest(
             employee_id=employee.id,
@@ -121,17 +138,18 @@ class LeaveService:
             reason=payload.reason,
             status=initial_status,
             supervisor_id=supervisor_user.id if supervisor_user else None,
+            approval_flow=approval_flow,
+            current_step=current_step,
+            workflow_steps=workflow_steps,
+            approval_history=[
+                workflow_event("submitted", "employee", current_user.id, payload.reason)
+            ],
         )
         self.db.add(leave)
         await self.db.commit()
         await self.db.refresh(leave)
 
-        if leave.supervisor_id and leave.status == LeaveStatus.pending_supervisor:
-            await self._notify(
-                leave.supervisor_id,
-                "Leave approval required",
-                f"Leave request #{leave.id} is pending.",
-            )
+        await self._notify_current_reviewer(leave)
 
         return leave
 
@@ -189,14 +207,7 @@ class LeaveService:
         self, leave_id: int, approver: User, payload: LeaveDecision
     ) -> LeaveRequest:
         leave = await self._leave(leave_id)
-        if leave.status != LeaveStatus.pending_supervisor:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Leave is not pending supervisor approval",
-            )
-        leave.supervisor_id = approver.id
-        leave.status = LeaveStatus.pending_manager
-        leave.decision_note = payload.note
+        leave = self._approve_current_step(leave, approver, payload, "supervisor")
         await self.db.commit()
         await self.db.refresh(leave)
 
@@ -207,6 +218,7 @@ class LeaveService:
                 "Leave escalated",
                 f"Leave request #{leave.id} moved to manager approval.",
             )
+        await self._notify_current_reviewer(leave)
 
         return leave
 
@@ -214,16 +226,31 @@ class LeaveService:
         self, leave_id: int, approver: User, payload: LeaveDecision
     ) -> LeaveRequest:
         leave = await self._leave(leave_id)
-        if leave.status not in {
-            LeaveStatus.pending_supervisor,
-            LeaveStatus.pending_manager,
-        }:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT, detail="Leave is already decided"
+        leave = self._approve_current_step(leave, approver, payload, "manager")
+        await self.db.commit()
+        await self.db.refresh(leave)
+
+        requester = await self._user_for_employee(leave.employee_id)
+        if requester:
+            is_forwarded_to_hr = safe_status_value(leave.status) == "pending_hr"
+            await self._notify(
+                requester.id,
+                "Leave moved to HR" if is_forwarded_to_hr else "Leave approved",
+                (
+                    f"Leave request #{leave.id} was approved by manager and moved to HR."
+                    if is_forwarded_to_hr
+                    else f"Leave request #{leave.id} was approved."
+                ),
             )
-        leave.manager_id = approver.id
-        leave.status = LeaveStatus.approved
-        leave.decision_note = payload.note
+        await self._notify_current_reviewer(leave)
+
+        return leave
+
+    async def hr_approve(
+        self, leave_id: int, approver: User, payload: LeaveDecision
+    ) -> LeaveRequest:
+        leave = await self._leave(leave_id)
+        leave = self._approve_current_step(leave, approver, payload, "hr")
         await self.db.commit()
         await self.db.refresh(leave)
 
@@ -241,9 +268,14 @@ class LeaveService:
         self, leave_id: int, approver: User, payload: LeaveDecision
     ) -> LeaveRequest:
         leave = await self._leave(leave_id)
-        leave.manager_id = approver.id
+        self._record_approver(leave, normalized_role_step(approver), approver.id)
         leave.status = LeaveStatus.rejected
+        leave.current_step = None
         leave.decision_note = payload.note
+        leave.approval_history = [
+            *(leave.approval_history or []),
+            workflow_event("rejected", normalized_role_step(approver), approver.id, payload.note),
+        ]
         await self.db.commit()
         await self.db.refresh(leave)
 
@@ -277,10 +309,71 @@ class LeaveService:
                 status_code=status.HTTP_409_CONFLICT, detail="Leave cannot be revoked"
             )
 
-        leave.status = LeaveStatus.revoked
+        policy = await self.get_policy()
+        revoke_rule = policy.get("revokeRule") or "Manager approval required"
+        revoke_steps = revoke_steps_for_rule(revoke_rule)
+        leave.revoke_rule = revoke_rule
+        leave.approval_flow = leave.approval_flow or await self.approval_flow_for_type(leave.leave_type)
+        leave.workflow_steps = revoke_steps
+        leave.current_step = revoke_steps[0] if revoke_steps else None
+        leave.approval_history = [
+            *(leave.approval_history or []),
+            workflow_event("revoke_requested", "employee", current_user.id, None),
+        ]
+        leave.status = (
+            revoke_status_for_step(leave.current_step)
+            if leave.current_step
+            else LeaveStatus.revoked
+        )
         await self.db.commit()
         await self.db.refresh(leave)
+        await self._notify_current_reviewer(leave)
         return leave
+
+    def _approve_current_step(
+        self,
+        leave: LeaveRequest,
+        approver: User,
+        payload: LeaveDecision,
+        expected_step: str,
+    ) -> LeaveRequest:
+        current_step = leave.current_step or inferred_current_step(leave.status)
+        workflow_steps = list(leave.workflow_steps or fallback_steps_for_status(leave.status))
+
+        if current_step != expected_step:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Leave is not pending {expected_step} approval",
+            )
+
+        is_revoke = safe_status_value(leave.status).startswith("revoke_pending")
+        self._record_approver(leave, expected_step, approver.id)
+        leave.decision_note = payload.note
+        leave.approval_history = [
+            *(leave.approval_history or []),
+            workflow_event("approved", expected_step, approver.id, payload.note),
+        ]
+
+        try:
+            current_index = workflow_steps.index(current_step)
+        except ValueError:
+            current_index = -1
+
+        next_step = workflow_steps[current_index + 1] if current_index + 1 < len(workflow_steps) else None
+        leave.current_step = next_step
+        leave.workflow_steps = workflow_steps
+        if next_step:
+            leave.status = revoke_status_for_step(next_step) if is_revoke else status_for_workflow_step(next_step)
+        else:
+            leave.status = LeaveStatus.revoked if is_revoke else LeaveStatus.approved
+        return leave
+
+    @staticmethod
+    def _record_approver(leave: LeaveRequest, step: str, approver_id: int) -> None:
+        if step == "supervisor":
+            leave.supervisor_id = approver_id
+        elif step in {"manager", "hr"}:
+            leave.manager_id = approver_id
 
     async def _leave(self, leave_id: int) -> LeaveRequest:
         result = await self.db.execute(
@@ -322,6 +415,36 @@ class LeaveService:
             )
         )
 
+    async def _notify_current_reviewer(self, leave: LeaveRequest) -> None:
+        step = leave.current_step or inferred_current_step(leave.status)
+        if step in {"supervisor", "manager"}:
+            requester = await self._employee(leave.employee_id)
+            reviewer = (
+                await self._user_for_employee(requester.reports_to_id)
+                if requester.reports_to_id
+                else None
+            )
+            if reviewer:
+                await self._notify(
+                    reviewer.id,
+                    "Leave approval required",
+                    f"Leave request #{leave.id} is pending {step} approval.",
+                )
+            return
+
+        if step == "hr":
+            result = await self.db.execute(
+                select(User)
+                .join(User.roles)
+                .where(RoleModel.name == Role.hr, User.is_active.is_(True))
+            )
+            for reviewer in result.scalars().unique().all():
+                await self._notify(
+                    reviewer.id,
+                    "Leave approval required",
+                    f"Leave request #{leave.id} is pending HR approval.",
+                )
+
     async def approval_flow_for_type(self, leave_type: str) -> str:
         policy = await self.get_policy()
         target_type = normalize_leave_type_key(leave_type)
@@ -347,6 +470,7 @@ class LeaveService:
                     [
                         LeaveStatus.pending_supervisor,
                         LeaveStatus.pending_manager,
+                        LeaveStatus.pending_hr,
                         LeaveStatus.approved,
                         LeaveStatus.revoke_pending_supervisor,
                         LeaveStatus.revoke_pending_manager,
@@ -372,3 +496,85 @@ def normalize_leave_type_key(value: object) -> str:
     if text_value.endswith(" leave"):
         return text_value[: -len(" leave")].strip()
     return text_value
+
+
+def workflow_steps_for_flow(flow: str | None) -> list[str]:
+    return list(APPROVAL_FLOW_STEPS.get(flow or "", APPROVAL_FLOW_STEPS["Manager only"]))
+
+
+def revoke_steps_for_rule(rule: str | None) -> list[str]:
+    normalized = str(rule or "").strip().lower()
+    if "auto" in normalized:
+        return []
+    if "supervisor" in normalized:
+        return ["supervisor"]
+    return ["manager"]
+
+
+def status_for_workflow_step(step: str | None) -> LeaveStatus:
+    if not step:
+        return LeaveStatus.approved
+    return STEP_STATUS.get(step, LeaveStatus.pending_manager)
+
+
+def revoke_status_for_step(step: str | None) -> LeaveStatus:
+    if not step:
+        return LeaveStatus.revoked
+    return REVOKE_STEP_STATUS.get(step, LeaveStatus.revoke_pending_manager)
+
+
+def inferred_current_step(status_value: LeaveStatus | str | None) -> str | None:
+    clean = safe_status_value(status_value)
+    if clean in {"pending_supervisor", "revoke_pending_supervisor"}:
+        return "supervisor"
+    if clean in {"pending_manager", "revoke_pending_manager"}:
+        return "manager"
+    if clean == "pending_hr":
+        return "hr"
+    return None
+
+
+def fallback_steps_for_status(status_value: LeaveStatus | str | None) -> list[str]:
+    clean = safe_status_value(status_value)
+    if clean == "pending_supervisor":
+        return ["supervisor", "manager"]
+    if clean == "pending_manager":
+        return ["manager"]
+    if clean == "pending_hr":
+        return ["hr"]
+    if clean == "revoke_pending_supervisor":
+        return ["supervisor"]
+    if clean == "revoke_pending_manager":
+        return ["manager"]
+    return []
+
+
+def safe_status_value(status_value: LeaveStatus | str | None) -> str:
+    value = getattr(status_value, "value", status_value)
+    return str(value or "").strip().lower()
+
+
+def normalized_role_step(user: User) -> str:
+    role_values = {
+        getattr(role.name, "value", role.name)
+        for role in (getattr(user, "roles", None) or [])
+    }
+    if "hr" in role_values:
+        return "hr"
+    if "manager" in role_values:
+        return "manager"
+    if "supervisor" in role_values:
+        return "supervisor"
+    if "admin" in role_values:
+        return "admin"
+    return "reviewer"
+
+
+def workflow_event(action: str, step: str, user_id: int | None, note: str | None) -> dict:
+    return {
+        "action": action,
+        "step": step,
+        "user_id": user_id,
+        "note": note,
+        "at": datetime.now(timezone.utc).isoformat(),
+    }

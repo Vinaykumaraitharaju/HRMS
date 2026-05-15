@@ -3376,6 +3376,9 @@ function canActOnTeamLeave(request, action) {
   if (action === "manager-approve") {
     return status === "pending manager" && (roles.includes("admin") || roles.includes("manager") || roles.includes("hr"));
   }
+  if (action === "hr-approve") {
+    return status === "pending hr" && (roles.includes("admin") || roles.includes("hr"));
+  }
   if (action === "reject") {
     return (status.startsWith("pending") || status.startsWith("revoke pending"))
       && (roles.includes("admin") || roles.includes("supervisor") || roles.includes("manager") || roles.includes("hr"));
@@ -3386,6 +3389,7 @@ function canActOnTeamLeave(request, action) {
 function canActOnAnyTeamLeaveStep(request) {
   return canActOnTeamLeave(request, "supervisor-approve")
     || canActOnTeamLeave(request, "manager-approve")
+    || canActOnTeamLeave(request, "hr-approve")
     || canActOnTeamLeave(request, "reject");
 }
 
@@ -3393,6 +3397,7 @@ function pendingWithLabel(status = "") {
   const clean = safeStatus(status).toLowerCase();
   if (clean === "pending supervisor" || clean === "revoke pending supervisor") return "Supervisor";
   if (clean === "pending manager" || clean === "revoke pending manager") return "Manager";
+  if (clean === "pending hr") return "HR";
   if (clean === "approved") return "Completed";
   if (clean === "rejected") return "Closed";
   if (clean === "revoked") return "Revoked";
@@ -3400,9 +3405,23 @@ function pendingWithLabel(status = "") {
 }
 
 function teamLeaveApprovalTrail(request) {
+  const steps = Array.isArray(request?.workflowSteps) ? request.workflowSteps : [];
+  if (steps.length) {
+    const current = request.currentStep;
+    return [
+      "Applied",
+      ...steps.map((step) => {
+        const label = step === "hr" ? "HR" : step.charAt(0).toUpperCase() + step.slice(1);
+        if (request.status === "Approved" || request.status === "Revoked") return `${label} approved`;
+        if (request.status === "Rejected") return `${label} reviewed`;
+        return step === current ? `${label} pending` : `${label} step`;
+      }),
+    ];
+  }
   const clean = safeStatus(request?.status).toLowerCase();
   if (clean === "pending supervisor") return ["Applied", "Supervisor pending", "Manager next"];
   if (clean === "pending manager") return ["Applied", "Supervisor approved", "Manager pending"];
+  if (clean === "pending hr") return ["Applied", "Manager approved", "HR pending"];
   if (clean === "approved") return ["Applied", "Reviewed", "Approved"];
   if (clean === "rejected") return ["Applied", "Reviewed", "Rejected"];
   if (clean === "revoke pending supervisor") return ["Revoke requested", "Supervisor pending", "Manager next"];
@@ -3474,6 +3493,7 @@ function renderTeamLeaveDetail(request) {
       <span><small>Days</small><strong>${request.days}</strong></span>
       <span><small>Status</small><strong><span class="status ${statusClass(request.status)}">${escapeHtml(request.status)}</span></strong></span>
       <span><small>Pending with</small><strong>${pendingWithLabel(request.status)}</strong></span>
+      <span><small>Rule</small><strong>${escapeHtml(request.approvalFlow || request.revokeRule || "Legacy status")}</strong></span>
       <span><small>Current role</small><strong>${escapeHtml(currentRoleProfile.label)}</strong></span>
     </div>
     <div class="team-leave-detail-section">
@@ -3533,10 +3553,13 @@ function renderTeamLeaveRequests() {
     const managerButton = canActOnTeamLeave(request, "manager-approve")
       ? `<button type="button" data-team-leave-action="manager-approve" data-team-leave-id="${request.id}">Approve</button>`
       : "";
+    const hrButton = canActOnTeamLeave(request, "hr-approve")
+      ? `<button type="button" data-team-leave-action="hr-approve" data-team-leave-id="${request.id}">HR approve</button>`
+      : "";
     const rejectButton = canActOnTeamLeave(request, "reject")
       ? `<button type="button" data-team-leave-action="reject" data-team-leave-id="${request.id}">Reject</button>`
       : "";
-    const actionButtons = [supervisorButton, managerButton, rejectButton]
+    const actionButtons = [supervisorButton, managerButton, hrButton, rejectButton]
       .filter(Boolean)
       .join("");
     const rowClass = String(request.id) === String(selectedTeamLeaveRequestId) ? " class=\"selected\"" : "";
@@ -3591,7 +3614,9 @@ async function decideTeamLeaveRequest(requestId, action) {
     ? `/api/v1/leaves/${requestId}/supervisor-approve`
     : action === "manager-approve"
       ? `/api/v1/leaves/${requestId}/manager-approve`
-      : `/api/v1/leaves/${requestId}/reject`;
+      : action === "hr-approve"
+        ? `/api/v1/leaves/${requestId}/hr-approve`
+        : `/api/v1/leaves/${requestId}/reject`;
   try {
     await fetchJson(route, { method: "POST", body: JSON.stringify({ note: "" }) });
     await Promise.allSettled([loadTeamLeaveRequests(), loadLeaveState(), loadNotificationState()]);
@@ -5680,6 +5705,11 @@ function mapLeaveStateRequests(state) {
       reason: parsedReason || "No reason added",
       status: String(item?.status || "").replaceAll("_", " ").replace(/\b\w/g, (m) => m.toUpperCase()),
       stage: item?.stage || String(item?.status || ""),
+      approvalFlow: item?.approval_flow || "",
+      currentStep: item?.current_step || "",
+      workflowSteps: Array.isArray(item?.workflow_steps) ? item.workflow_steps : [],
+      approvalHistory: Array.isArray(item?.approval_history) ? item.approval_history : [],
+      revokeRule: item?.revoke_rule || "",
     };
   });
 }

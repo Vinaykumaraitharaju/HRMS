@@ -20,6 +20,7 @@ from app.core.database import Base
 class LeaveStatus(str, enum.Enum):
     pending_supervisor = "pending_supervisor"
     pending_manager = "pending_manager"
+    pending_hr = "pending_hr"
     approved = "approved"
     rejected = "rejected"
     revoke_pending_supervisor = "revoke_pending_supervisor"
@@ -42,6 +43,11 @@ class LeaveRequest(Base):
     supervisor_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=True)
     manager_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=True)
     decision_note: Mapped[str] = mapped_column(String(500), nullable=True)
+    approval_flow: Mapped[str] = mapped_column(String(120), nullable=True)
+    current_step: Mapped[str] = mapped_column(String(40), nullable=True)
+    workflow_steps: Mapped[list] = mapped_column(JSON, nullable=True)
+    approval_history: Mapped[list] = mapped_column(JSON, nullable=True)
+    revoke_rule: Mapped[str] = mapped_column(String(120), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
