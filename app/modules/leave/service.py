@@ -304,9 +304,28 @@ class LeaveService:
                 detail="Cannot revoke another employee leave",
             )
 
-        if leave.status in {LeaveStatus.rejected, LeaveStatus.revoked}:
+        if leave.status in {LeaveStatus.rejected, LeaveStatus.revoked, LeaveStatus.cancelled}:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT, detail="Leave cannot be revoked"
+            )
+
+        if safe_status_value(leave.status).startswith("pending"):
+            leave.status = LeaveStatus.cancelled
+            leave.current_step = None
+            leave.decision_note = "Cancelled by employee before approval."
+            leave.approval_history = [
+                *(leave.approval_history or []),
+                workflow_event("cancelled", "employee", current_user.id, None),
+            ]
+            await self.db.commit()
+            await self.db.refresh(leave)
+            return leave
+
+        today = date.today()
+        if leave.start_date < today:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Past leave cannot be revoked. Contact HR.",
             )
 
         policy = await self.get_policy()

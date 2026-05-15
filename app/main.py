@@ -216,6 +216,7 @@ async def _migrate_leave_workflow_columns() -> None:
     async with engine.begin() as conn:
         if conn.dialect.name == "postgresql":
             await conn.execute(text("ALTER TYPE leavestatus ADD VALUE IF NOT EXISTS 'pending_hr'"))
+            await conn.execute(text("ALTER TYPE leavestatus ADD VALUE IF NOT EXISTS 'cancelled'"))
             for column_name, column_type in workflow_columns.items():
                 await conn.execute(
                     text(

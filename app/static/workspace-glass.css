@@ -1881,6 +1881,7 @@ label {
 
 .status.rejected,
 .status.revoked,
+.status.cancelled,
 .status.revoke-pending,
 .status.revoke-pending-manager,
 .status.revoke-pending-supervisor {

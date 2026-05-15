@@ -3517,6 +3517,7 @@ function pendingWithLabel(status = "") {
   if (clean === "pending manager" || clean === "revoke pending manager") return "Manager";
   if (clean === "pending hr") return "HR";
   if (clean === "approved") return "Completed";
+  if (clean === "cancelled") return "Cancelled";
   if (clean === "rejected") return "Closed";
   if (clean === "revoked") return "Revoked";
   return "Review";
@@ -3541,6 +3542,7 @@ function teamLeaveApprovalTrail(request) {
   if (clean === "pending manager") return ["Applied", "Supervisor approved", "Manager pending"];
   if (clean === "pending hr") return ["Applied", "Manager approved", "HR pending"];
   if (clean === "approved") return ["Applied", "Reviewed", "Approved"];
+  if (clean === "cancelled") return ["Applied", "Cancelled"];
   if (clean === "rejected") return ["Applied", "Reviewed", "Rejected"];
   if (clean === "revoke pending supervisor") return ["Revoke requested", "Supervisor pending", "Manager next"];
   if (clean === "revoke pending manager") return ["Revoke requested", "Supervisor approved", "Manager pending"];
@@ -3641,7 +3643,7 @@ function renderTeamLeaveRequests() {
   const actionCount = teamLeaveRequests.filter(canActOnAnyTeamLeaveStep).length;
   const completedCount = teamLeaveRequests.filter((request) => {
     const status = safeStatus(request?.status).toLowerCase();
-    return ["approved", "rejected", "revoked"].includes(status);
+    return ["approved", "cancelled", "rejected", "revoked"].includes(status);
   }).length;
   const visibleRequests = filteredTeamLeaveRequests();
   if (teamLeaveSummary) {
@@ -5737,7 +5739,18 @@ function approvalStageForFlow(flow = "Manager only") {
 }
 
 function canRevokeLeave(request) {
-  return safeStatus(request?.status) !== "Revoked" && !safeStatus(request?.status).startsWith("Revoke Pending");
+  const status = safeStatus(request?.status);
+  return !["Cancelled", "Rejected", "Revoked"].includes(status) && !status.startsWith("Revoke Pending");
+}
+
+function leaveRequestActionLabel(request) {
+  const status = safeStatus(request?.status);
+  if (status === "Cancelled") return "Cancelled";
+  if (status === "Rejected") return "Rejected";
+  if (status === "Revoked") return "Revoked";
+  if (status.startsWith("Revoke Pending")) return "Pending approval";
+  if (status.startsWith("Pending")) return "Cancel request";
+  return "Request revoke";
 }
 
 function requestStageLabel(request) {
@@ -5786,7 +5799,7 @@ function renderMyRequests() {
     const status = safeStatus(row.status).toLowerCase();
     if (status.startsWith("pending") || status.startsWith("revoke pending")) acc.pending += 1;
     else if (status === "approved") acc.approved += 1;
-    else if (status === "revoked") acc.revoked += 1;
+    else if (status === "revoked" || status === "cancelled") acc.revoked += 1;
     else if (status === "rejected") acc.rejected += 1;
     return acc;
   }, { pending: 0, approved: 0, revoked: 0, rejected: 0 });
@@ -5806,7 +5819,7 @@ function renderMyRequests() {
 
   myRequestRows.innerHTML = visibleRows.map((row) => {
     const dateRange = `${formatDateText(row.start, { month: "short", day: "numeric" })} - ${formatDateText(row.end, { month: "short", day: "numeric" })}`;
-    const actionLabel = row.raw?.status === "Revoked" ? "Revoked" : row.raw?.status?.startsWith("Revoke Pending") ? "Pending" : "Revoke";
+    const actionLabel = leaveRequestActionLabel(row.raw);
     return `
       <tr>
         <td><strong>${escapeHtml(row.requestId || "-")}</strong></td>
@@ -5875,14 +5888,18 @@ function revokeLeaveRequest(requestId) {
     showToast(request?.status === "Revoked" ? "This leave request is already revoked." : "Revoke approval is already pending.");
     return;
   }
-  showToast("Processing revoke request...");
+  showToast(safeStatus(request?.status).startsWith("Pending") ? "Cancelling leave request..." : "Processing revoke request...");
   fetchJson(`/api/v1/leaves/request/${requestId}`, { method: "DELETE" })
     .then(() => loadLeaveState())
     .then(() => {
       renderLeave();
       renderLeaveWorkspace();
       const updated = leaveTrackerRequests.find((item) => String(item.id) === String(requestId));
-      showToast(safeStatus(updated?.status).startsWith("Revoke Pending") ? "Revoke request sent for manager approval." : "Leave request marked as revoked.");
+      if (safeStatus(updated?.status) === "Cancelled") {
+        showToast("Pending leave request cancelled.");
+      } else {
+        showToast(safeStatus(updated?.status).startsWith("Revoke Pending") ? "Revoke request sent for approval." : "Leave request marked as revoked.");
+      }
     })
     .catch((error) => {
       showToast(error.message || "Leave request could not be revoked.");
@@ -5949,6 +5966,7 @@ function leaveCalendarTag(request, holiday, dateText) {
   if (request?.status === "Approved") return request.leaveId || "Approved";
   if (request?.status?.startsWith("Pending")) return "Pending";
   if (request?.status?.startsWith("Revoke Pending")) return "Revoke pending";
+  if (request?.status === "Cancelled") return "Cancelled";
   if (request?.status === "Revoked") return "Revoked";
   if (holiday) return holiday.name || "Holiday";
   if (isWeekend(dateText)) return "Weekend";
@@ -6012,7 +6030,7 @@ function renderLeaveWorkspace() {
           ${leaveStepsFor(request).map(([label, state]) => `<span class="leave-step ${state}">${label}</span>`).join("")}
         </div>
         <div class="leave-request-actions">
-          <button class="revoke-leave-button" type="button" data-revoke-leave="${request?.id || ""}" ${canRevokeLeave(request) ? "" : "disabled"}>${request?.status === "Revoked" ? "Revoked" : request?.status?.startsWith("Revoke Pending") ? "Pending approval" : "Revoke leave"}</button>
+          <button class="revoke-leave-button" type="button" data-revoke-leave="${request?.id || ""}" ${canRevokeLeave(request) ? "" : "disabled"}>${leaveRequestActionLabel(request)}</button>
         </div>
       </article>`).join("");
   const requestRows = (leaveTrackerRequests || [])
@@ -6026,7 +6044,7 @@ function renderLeaveWorkspace() {
         <td>${request?.days || 0}</td>
         <td>${request?.reason || ""}</td>
         <td><span class="status ${statusClassName(request?.status)}">${request?.status}</span></td>
-        <td><button class="revoke-leave-button" type="button" data-revoke-leave="${request?.id || ""}" ${canRevokeLeave(request) ? "" : "disabled"}>${request?.status === "Revoked" ? "Revoked" : request?.status?.startsWith("Revoke Pending") ? "Pending approval" : "Revoke"}</button></td>
+        <td><button class="revoke-leave-button" type="button" data-revoke-leave="${request?.id || ""}" ${canRevokeLeave(request) ? "" : "disabled"}>${leaveRequestActionLabel(request)}</button></td>
       </tr>`).join("");
   leaveRequestList.innerHTML = `
     <table class="leave-request-table">
@@ -6062,7 +6080,7 @@ function renderLeaveWorkspace() {
       isDateInRange(dateText, selectedStart, selectedEnd) ? "range-selected" : "",
       request?.status === "Approved" ? "leave-approved" : "",
       (request?.status?.startsWith("Pending") || request?.status?.startsWith("Revoke Pending")) ? "leave-pending" : "",
-      request?.status === "Revoked" ? "leave-revoked" : "",
+      (request?.status === "Revoked" || request?.status === "Cancelled") ? "leave-revoked" : "",
       holiday ? "holiday" : "",
       isWeekend(dateText) && !holiday ? "weekend" : "",
     ].join(" ");

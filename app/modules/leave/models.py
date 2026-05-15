@@ -22,6 +22,7 @@ class LeaveStatus(str, enum.Enum):
     pending_manager = "pending_manager"
     pending_hr = "pending_hr"
     approved = "approved"
+    cancelled = "cancelled"
     rejected = "rejected"
     revoke_pending_supervisor = "revoke_pending_supervisor"
     revoke_pending_manager = "revoke_pending_manager"

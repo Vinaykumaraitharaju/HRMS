@@ -260,11 +260,12 @@ async def revoke_leave(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     leave = await LeaveService(db).revoke(leave_id, current_user)
+    is_cancelled = getattr(leave.status, "value", leave.status) == "cancelled"
     await safe_record_audit(
         db,
         category="Leave",
-        action="leave.revoked",
-        message=f"Leave revoked: #{leave.id}",
+        action="leave.cancelled" if is_cancelled else "leave.revoked",
+        message=f"Leave {'cancelled' if is_cancelled else 'revoked'}: #{leave.id}",
         actor=current_user,
         entity_type="leave",
         entity_id=leave.id,
@@ -273,8 +274,12 @@ async def revoke_leave(
     await _safe_notify(
         db=db,
         user_id=current_user.id,
-        title="Leave request revoked",
-        message="Your leave request has been revoked.",
+        title="Leave request cancelled" if is_cancelled else "Leave revoke requested",
+        message=(
+            "Your pending leave request has been cancelled."
+            if is_cancelled
+            else "Your leave revoke request has been submitted."
+        ),
     )
 
     return leave
