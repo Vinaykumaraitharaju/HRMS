@@ -46,6 +46,86 @@
   startChatPolling();
 })();
 let chatPollingInterval = null;
+const IDLE_TIMEOUT_MS = 15 * 60 * 1000;
+const IDLE_WARNING_MS = 60 * 1000;
+let idleWarningTimer = null;
+let idleLogoutTimer = null;
+let idleCountdownTimer = null;
+let idleLogoutAt = 0;
+let idleTrackingStarted = false;
+let idleLogoutInProgress = false;
+let idleBackgroundDepth = 0;
+let lastIdleActivityAt = 0;
+
+function hideIdleWarning() {
+  idleWarningModal?.classList.add("hidden");
+  if (idleCountdownTimer) {
+    clearInterval(idleCountdownTimer);
+    idleCountdownTimer = null;
+  }
+}
+
+function updateIdleCountdown() {
+  if (!idleWarningCountdown) return;
+  const remainingSeconds = Math.max(0, Math.ceil((idleLogoutAt - Date.now()) / 1000));
+  idleWarningCountdown.textContent = String(remainingSeconds);
+}
+
+function showIdleWarning() {
+  if (idleLogoutInProgress) return;
+  idleWarningModal?.classList.remove("hidden");
+  updateIdleCountdown();
+  if (idleCountdownTimer) clearInterval(idleCountdownTimer);
+  idleCountdownTimer = setInterval(updateIdleCountdown, 1000);
+}
+
+function performIdleLogout() {
+  if (idleLogoutInProgress) return;
+  idleLogoutInProgress = true;
+  hideIdleWarning();
+  showToast("Logged out due to inactivity.");
+  logoutToLogin();
+}
+
+function scheduleIdleTimers() {
+  if (idleWarningTimer) clearTimeout(idleWarningTimer);
+  if (idleLogoutTimer) clearTimeout(idleLogoutTimer);
+  idleLogoutAt = Date.now() + IDLE_TIMEOUT_MS;
+  idleWarningTimer = setTimeout(showIdleWarning, IDLE_TIMEOUT_MS - IDLE_WARNING_MS);
+  idleLogoutTimer = setTimeout(performIdleLogout, IDLE_TIMEOUT_MS);
+}
+
+function noteIdleActivity(source = "user") {
+  if (idleLogoutInProgress) return;
+  if (source === "api" && idleBackgroundDepth > 0) return;
+  const now = Date.now();
+  if (source === "user" && now - lastIdleActivityAt < 1000 && idleWarningModal?.classList.contains("hidden")) {
+    return;
+  }
+  lastIdleActivityAt = now;
+  hideIdleWarning();
+  scheduleIdleTimers();
+}
+
+async function runIdleBackgroundTask(task) {
+  idleBackgroundDepth += 1;
+  try {
+    return await task();
+  } finally {
+    idleBackgroundDepth = Math.max(0, idleBackgroundDepth - 1);
+  }
+}
+
+function startIdleTracking() {
+  if (idleTrackingStarted) return;
+  idleTrackingStarted = true;
+  ["mousemove", "mousedown", "keydown", "touchstart", "scroll", "wheel"].forEach((eventName) => {
+    window.addEventListener(eventName, () => noteIdleActivity("user"), { passive: true });
+  });
+  staySignedInButton?.addEventListener("click", () => noteIdleActivity("user"));
+  idleLogoutNowButton?.addEventListener("click", performIdleLogout);
+  scheduleIdleTimers();
+}
 
 function handleAuthExpired() {
   sessionStorage.removeItem("hrms_access_token");
@@ -64,7 +144,7 @@ function startChatPolling() {
     if (document.body.dataset.view !== "chat") return;
 
     try {
-      await loadChatState();
+      await runIdleBackgroundTask(loadChatState);
     } catch (err) {
       console.error("Polling failed", err);
     }
@@ -345,6 +425,10 @@ const appShell = document.querySelector("#appShell");
 const sidebarNav = document.querySelector("#sidebarNav");
 const sidebarToggle = document.querySelector("#sidebarToggle");
 const logoutButton = document.querySelector(".logout-button");
+const idleWarningModal = document.querySelector("#idleWarningModal");
+const idleWarningCountdown = document.querySelector("#idleWarningCountdown");
+const staySignedInButton = document.querySelector("#staySignedInButton");
+const idleLogoutNowButton = document.querySelector("#idleLogoutNowButton");
 const backButton = document.querySelector("#backButton");
 const forwardButton = document.querySelector("#forwardButton");
 const statsGrid = document.querySelector("#statsGrid");
@@ -826,6 +910,7 @@ async function fetchJson(url, options = {}) {
     throw new Error(detail);
   }
 
+  noteIdleActivity("api");
   if (response.status === 204) return null;
 
   return response.json();
@@ -8072,6 +8157,7 @@ renderLeave();
 renderAnnouncements();
 resetLeaveApplicationForm();
 bindInteractions();
+startIdleTracking();
 routeFromCurrentPath(false);
 updateClock();
 syncViewportLayout();
@@ -8085,9 +8171,13 @@ window.addEventListener("popstate", () => {
 window.addEventListener("resize", syncViewportLayout);
 setInterval(updateClock, 30000);
 setInterval(() => {
-  loadPresenceState();
-  loadChatState();
-  loadNotificationState();
+  runIdleBackgroundTask(async () => {
+    await Promise.allSettled([
+      loadPresenceState(),
+      loadChatState(),
+      loadNotificationState(),
+    ]);
+  });
 }, 3000);
 setInterval(() => {
   if (attendanceState.activeBreakType) {

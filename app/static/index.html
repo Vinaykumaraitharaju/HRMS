@@ -5,7 +5,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Wavelynk HRMS</title>
-  <link rel="stylesheet" href="/static/workspace-glass.css?v=20260515-break-modal" />
+  <link rel="stylesheet" href="/static/workspace-glass.css?v=20260515-idle-timeout" />
 </head>
 
 <body>
@@ -808,6 +808,19 @@
     </div>
   </div>
 
+  <div id="idleWarningModal" class="modal idle-warning-modal hidden" aria-live="assertive">
+    <div class="modal-card glass-panel idle-warning-card">
+      <div class="modal-head">
+        <h3>Still working?</h3>
+      </div>
+      <p>You will be logged out due to inactivity in <strong id="idleWarningCountdown">60</strong> seconds.</p>
+      <div class="form-actions">
+        <button id="staySignedInButton" class="primary-action" type="button">Stay signed in</button>
+        <button id="idleLogoutNowButton" type="button">Logout now</button>
+      </div>
+    </div>
+  </div>
+
   <div id="wfhModal" class="modal hidden">
     <div class="modal-card glass-panel">
       <div class="card-head">
@@ -849,7 +862,7 @@
   </div>
 
   <div id="toast" class="toast hidden"></div>
-  <script src="/static/app.js?v=20260515-break-modal"></script>
+  <script src="/static/app.js?v=20260515-idle-timeout"></script>
 </body>
 
 </html>

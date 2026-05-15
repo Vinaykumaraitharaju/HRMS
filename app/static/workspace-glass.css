@@ -3724,6 +3724,26 @@ body[data-view="calendar"] .pulse-suite-nav.glass-panel {
   margin: 0;
 }
 
+.idle-warning-modal {
+  z-index: 180;
+  background: rgba(8, 29, 31, 0.42);
+}
+
+.idle-warning-card {
+  width: min(440px, calc(100vw - 32px));
+  color: var(--ink);
+}
+
+.idle-warning-card p {
+  margin: 0 0 18px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.idle-warning-card strong {
+  color: var(--brand);
+}
+
 .people-results,
 .selected-people,
 .break-type-grid {
