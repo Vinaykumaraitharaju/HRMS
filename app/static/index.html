@@ -458,7 +458,38 @@
               <button id="refreshTeamLeaveRequests" type="button">Refresh</button>
             </div>
             <div id="teamLeaveSummary" class="admin-summary-strip"></div>
-            <div id="teamLeaveRows" class="policy-list team-leave-list"></div>
+            <div class="team-leave-toolbar">
+              <label>View
+                <select id="teamLeaveStatusFilter">
+                  <option value="pending-me">Pending me</option>
+                  <option value="all">All requests</option>
+                  <option value="pending">All pending</option>
+                  <option value="approved">Approved</option>
+                  <option value="rejected">Rejected</option>
+                  <option value="revoked">Revoked</option>
+                </select>
+              </label>
+              <label>Search
+                <input id="teamLeaveSearchInput" type="search" placeholder="Search employee, ID, type, reason, status" />
+              </label>
+              <span id="teamLeaveCountBadge" class="table-count-pill">Showing 0 of 0</span>
+            </div>
+            <div class="table-scroll team-leave-table-scroll">
+              <table class="compact-table team-leave-table">
+                <thead>
+                  <tr>
+                    <th>Employee</th>
+                    <th>Leave</th>
+                    <th>Approval path</th>
+                    <th>Reason</th>
+                    <th>Status</th>
+                    <th>Pending with</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="teamLeaveRows"></tbody>
+              </table>
+            </div>
           </section>
 
           <section id="timesheetControlPanel" class="glass-card admin-panel hidden">

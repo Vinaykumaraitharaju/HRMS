@@ -147,12 +147,6 @@ class LeaveService:
             getattr(role.name, "value", role.name)
             for role in (getattr(current_user, "roles", None) or [])
         }
-        pending_statuses = [
-            LeaveStatus.pending_supervisor,
-            LeaveStatus.pending_manager,
-            LeaveStatus.revoke_pending_supervisor,
-            LeaveStatus.revoke_pending_manager,
-        ]
         query = (
             select(LeaveRequest, Employee)
             .join(Employee, LeaveRequest.employee_id == Employee.id)
@@ -160,28 +154,23 @@ class LeaveService:
         )
 
         if "admin" in role_values or "hr" in role_values:
-            query = query.where(LeaveRequest.status.in_(pending_statuses))
+            pass
         elif "manager" in role_values:
-            query = query.where(
-                LeaveRequest.status.in_(
-                    [
-                        LeaveStatus.pending_manager,
-                        LeaveStatus.pending_supervisor,
-                        LeaveStatus.revoke_pending_manager,
-                    ]
-                )
-            )
+            manager_conditions = [
+                LeaveRequest.manager_id == current_user.id,
+                LeaveRequest.supervisor_id == current_user.id,
+            ]
+            if current_user.employee_id:
+                manager_conditions.append(Employee.reports_to_id == current_user.employee_id)
+            query = query.where(or_(*manager_conditions))
         elif "supervisor" in role_values:
-            query = query.where(
-                LeaveRequest.status.in_(
-                    [LeaveStatus.pending_supervisor, LeaveStatus.revoke_pending_supervisor]
-                ),
-                or_(
-                    LeaveRequest.supervisor_id == current_user.id,
-                    Employee.reports_to_id == current_user.employee_id,
-                    LeaveRequest.supervisor_id.is_(None),
-                ),
-            )
+            supervisor_conditions = [
+                LeaveRequest.supervisor_id == current_user.id,
+                LeaveRequest.supervisor_id.is_(None),
+            ]
+            if current_user.employee_id:
+                supervisor_conditions.append(Employee.reports_to_id == current_user.employee_id)
+            query = query.where(or_(*supervisor_conditions))
         else:
             return []
 

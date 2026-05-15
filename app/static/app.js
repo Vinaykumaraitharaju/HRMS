@@ -439,6 +439,9 @@ const teamLeavePanel = document.querySelector("#teamLeavePanel");
 const teamLeaveRows = document.querySelector("#teamLeaveRows");
 const teamLeaveSummary = document.querySelector("#teamLeaveSummary");
 const refreshTeamLeaveRequests = document.querySelector("#refreshTeamLeaveRequests");
+const teamLeaveSearchInput = document.querySelector("#teamLeaveSearchInput");
+const teamLeaveStatusFilter = document.querySelector("#teamLeaveStatusFilter");
+const teamLeaveCountBadge = document.querySelector("#teamLeaveCountBadge");
 const leavePolicyForm = document.querySelector("#leavePolicyForm");
 const annualBalanceInput = document.querySelector("#annualBalanceInput");
 const casualBalanceInput = document.querySelector("#casualBalanceInput");
@@ -3334,18 +3337,79 @@ function currentUserRoleValues() {
 function canActOnTeamLeave(request, action) {
   const roles = currentUserRoleValues();
   const status = safeStatus(request?.status).toLowerCase();
-  if (roles.includes("admin")) return true;
   if (action === "supervisor-approve") {
-    return status === "pending supervisor" && (roles.includes("supervisor") || roles.includes("manager"));
+    return status === "pending supervisor" && (roles.includes("admin") || roles.includes("supervisor") || roles.includes("manager"));
   }
   if (action === "manager-approve") {
-    return status === "pending manager" && (roles.includes("manager") || roles.includes("hr"));
+    return status === "pending manager" && (roles.includes("admin") || roles.includes("manager") || roles.includes("hr"));
   }
   if (action === "reject") {
     return (status.startsWith("pending") || status.startsWith("revoke pending"))
-      && (roles.includes("supervisor") || roles.includes("manager") || roles.includes("hr"));
+      && (roles.includes("admin") || roles.includes("supervisor") || roles.includes("manager") || roles.includes("hr"));
   }
   return false;
+}
+
+function canActOnAnyTeamLeaveStep(request) {
+  return canActOnTeamLeave(request, "supervisor-approve")
+    || canActOnTeamLeave(request, "manager-approve")
+    || canActOnTeamLeave(request, "reject");
+}
+
+function pendingWithLabel(status = "") {
+  const clean = safeStatus(status).toLowerCase();
+  if (clean === "pending supervisor" || clean === "revoke pending supervisor") return "Supervisor";
+  if (clean === "pending manager" || clean === "revoke pending manager") return "Manager";
+  if (clean === "approved") return "Completed";
+  if (clean === "rejected") return "Closed";
+  if (clean === "revoked") return "Revoked";
+  return "Review";
+}
+
+function teamLeaveApprovalTrail(request) {
+  const clean = safeStatus(request?.status).toLowerCase();
+  if (clean === "pending supervisor") return ["Applied", "Supervisor pending", "Manager next"];
+  if (clean === "pending manager") return ["Applied", "Supervisor approved", "Manager pending"];
+  if (clean === "approved") return ["Applied", "Reviewed", "Approved"];
+  if (clean === "rejected") return ["Applied", "Reviewed", "Rejected"];
+  if (clean === "revoke pending supervisor") return ["Revoke requested", "Supervisor pending", "Manager next"];
+  if (clean === "revoke pending manager") return ["Revoke requested", "Supervisor approved", "Manager pending"];
+  if (clean === "revoked") return ["Revoke requested", "Reviewed", "Revoked"];
+  return ["Applied", "Review", "Decision"];
+}
+
+function filteredTeamLeaveRequests() {
+  const filter = teamLeaveStatusFilter?.value || "pending-me";
+  const search = (teamLeaveSearchInput?.value || "").trim().toLowerCase();
+
+  return teamLeaveRequests.filter((request) => {
+    const status = safeStatus(request?.status).toLowerCase();
+    const matchesFilter =
+      filter === "all"
+      || (filter === "pending-me" && canActOnAnyTeamLeaveStep(request))
+      || (filter === "pending" && (status.startsWith("pending") || status.startsWith("revoke pending")))
+      || (filter === "approved" && status === "approved")
+      || (filter === "rejected" && status === "rejected")
+      || (filter === "revoked" && status === "revoked");
+
+    if (!matchesFilter) return false;
+    if (!search) return true;
+
+    const employee = adminEmployees.find((item) => Number(item.id) === Number(request.employeeId));
+    const haystack = [
+      request.requesterName,
+      request.requesterCode,
+      employee?.name,
+      employee?.employeeId,
+      request.leaveId,
+      request.type,
+      request.reason,
+      request.status,
+      pendingWithLabel(request.status),
+    ].join(" ").toLowerCase();
+
+    return haystack.includes(search);
+  });
 }
 
 async function loadTeamLeaveRequests() {
@@ -3357,18 +3421,32 @@ async function loadTeamLeaveRequests() {
 
 function renderTeamLeaveRequests() {
   if (!teamLeaveRows) return;
-  const pendingCount = teamLeaveRequests.filter((request) => safeStatus(request?.status).toLowerCase().startsWith("pending")).length;
+  const pendingCount = teamLeaveRequests.filter((request) => {
+    const status = safeStatus(request?.status).toLowerCase();
+    return status.startsWith("pending") || status.startsWith("revoke pending");
+  }).length;
+  const actionCount = teamLeaveRequests.filter(canActOnAnyTeamLeaveStep).length;
+  const completedCount = teamLeaveRequests.filter((request) => {
+    const status = safeStatus(request?.status).toLowerCase();
+    return ["approved", "rejected", "revoked"].includes(status);
+  }).length;
+  const visibleRequests = filteredTeamLeaveRequests();
   if (teamLeaveSummary) {
     teamLeaveSummary.innerHTML = `
-      <span><strong>${teamLeaveRequests.length}</strong><small>visible requests</small></span>
-      <span><strong>${pendingCount}</strong><small>waiting approval</small></span>
+      <span><strong>${actionCount}</strong><small>need your action</small></span>
+      <span><strong>${pendingCount}</strong><small>open approvals</small></span>
+      <span><strong>${completedCount}</strong><small>completed history</small></span>
       <span><strong>${currentRoleProfile.label}</strong><small>current role</small></span>
     `;
   }
-  teamLeaveRows.innerHTML = teamLeaveRequests.map((request) => {
+  if (teamLeaveCountBadge) {
+    teamLeaveCountBadge.textContent = `Showing ${visibleRequests.length} of ${teamLeaveRequests.length}`;
+  }
+  teamLeaveRows.innerHTML = visibleRequests.map((request) => {
     const employee = adminEmployees.find((item) => Number(item.id) === Number(request.employeeId));
     const requester = request.requesterName || employee?.name || "Employee";
     const requesterCode = request.requesterCode || employee?.employeeId || `#${request.employeeId || ""}`;
+    const trail = teamLeaveApprovalTrail(request);
     const supervisorButton = canActOnTeamLeave(request, "supervisor-approve")
       ? `<button type="button" data-team-leave-action="supervisor-approve" data-team-leave-id="${request.id}">Supervisor approve</button>`
       : "";
@@ -3379,20 +3457,31 @@ function renderTeamLeaveRequests() {
       ? `<button type="button" data-team-leave-action="reject" data-team-leave-id="${request.id}">Reject</button>`
       : "";
     return `
-      <article class="team-leave-row">
-        <div>
-          <strong>${requester}</strong>
-          <small>${requesterCode} - ${request.leaveId}</small>
-        </div>
-        <div>
-          <span>${request.type}</span>
-          <small>${formatDateRange(request.start, request.end)} - ${request.days} day${request.days === 1 ? "" : "s"}</small>
-        </div>
-        <p>${request.reason}</p>
-        <span class="status ${statusClass(request.status)}">${request.status}</span>
-        <div class="policy-row-actions">${supervisorButton}${managerButton}${rejectButton}</div>
-      </article>`;
-  }).join("") || `<div class="empty-state">No team leave requests are waiting for your role.</div>`;
+      <tr>
+        <td>
+          <div class="team-leave-person">
+            <span class="avatar">${safeInitials(requester)}</span>
+            <span>
+              <strong>${escapeHtml(requester)}</strong>
+              <small>${escapeHtml(requesterCode)} / ${escapeHtml(request.leaveId)}</small>
+            </span>
+          </div>
+        </td>
+        <td>
+          <strong>${escapeHtml(request.type)}</strong>
+          <small>${formatDateRange(request.start, request.end)} / ${request.days} day${request.days === 1 ? "" : "s"}</small>
+        </td>
+        <td>
+          <div class="approval-trail">
+            ${trail.map((step) => `<span>${escapeHtml(step)}</span>`).join("")}
+          </div>
+        </td>
+        <td><span class="team-leave-reason">${escapeHtml(request.reason)}</span></td>
+        <td><span class="status ${statusClass(request.status)}">${escapeHtml(request.status)}</span></td>
+        <td>${pendingWithLabel(request.status)}</td>
+        <td><div class="policy-row-actions">${supervisorButton}${managerButton}${rejectButton || (!supervisorButton && !managerButton ? "<span class=\"muted-text\">No action</span>" : "")}</div></td>
+      </tr>`;
+  }).join("") || `<tr><td colspan="7">No team leave requests match this view.</td></tr>`;
 }
 
 async function openTeamLeaveAdmin() {
@@ -7264,6 +7353,8 @@ function bindInteractions() {
       showToast(err.message || "Team leave requests could not be refreshed.");
     });
   });
+  teamLeaveSearchInput?.addEventListener("input", renderTeamLeaveRequests);
+  teamLeaveStatusFilter?.addEventListener("change", renderTeamLeaveRequests);
   teamLeaveRows?.addEventListener("click", (event) => {
     const button = event.target.closest("[data-team-leave-action]");
     if (!button) return;
