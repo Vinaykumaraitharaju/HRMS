@@ -423,6 +423,14 @@ const adminActionLabels = {
   "audit-logs": "Audit Logs",
 };
 
+const restrictedTeamLeaveRoles = new Set(["supervisor", "manager"]);
+const privilegedAdminRoles = new Set(["admin", "hr"]);
+
+function showAccessDeniedDashboard() {
+  showToast("You do not have access to that admin area.");
+  navigateToView("dashboard", "dashboardSection", "Dashboard");
+}
+
 const appShell = document.querySelector("#appShell");
 const sidebarNav = document.querySelector("#sidebarNav");
 const sidebarToggle = document.querySelector("#sidebarToggle");
@@ -1808,6 +1816,37 @@ function setActiveAdminButton(action) {
   });
 }
 
+function canUseFullAdminConsole() {
+  return currentUserRoleValues().some((role) => privilegedAdminRoles.has(role));
+}
+
+function canUseTeamLeaveConsole() {
+  return currentUserRoleValues().some((role) => privilegedAdminRoles.has(role) || restrictedTeamLeaveRoles.has(role));
+}
+
+function syncAdminConsoleAccess(activeAction = "") {
+  if (!adminView) return;
+  const fullAdmin = canUseFullAdminConsole();
+  const teamLeaveOnly = !fullAdmin && activeAction === "team-leaves";
+  adminView.classList.toggle("team-leave-only", teamLeaveOnly);
+
+  const heading = adminView.querySelector(".page-heading h2");
+  const note = adminView.querySelector(".page-heading > p:not(.eyebrow)");
+  if (heading) heading.textContent = teamLeaveOnly ? "Team Leave Requests" : "People Command Center";
+  if (note) {
+    note.textContent = teamLeaveOnly
+      ? "Review team leave requests assigned to your approval role."
+      : "Manage people, access, leave policies, timesheets, and audit controls with a premium operating console.";
+  }
+
+  document.querySelectorAll("[data-role-action]").forEach((button) => {
+    const action = button.dataset.roleAction;
+    const allowed = fullAdmin || action === "team-leaves";
+    button.hidden = !allowed;
+    button.disabled = !allowed;
+  });
+}
+
 function hideAdminPanels() {
   [employeeAdminPanel, rolesAccessPanel, leavePolicyPanel, teamLeavePanel, timesheetControlPanel, auditLogPanel].forEach((panel) => {
     if (!panel) return;
@@ -1826,7 +1865,16 @@ function scrollAdminPanelIntoView(panel) {
 }
 
 function openAdminConsole(pushPath = true) {
+  if (!canUseFullAdminConsole() && canUseTeamLeaveConsole()) {
+    openAdminModule("team-leaves", pushPath);
+    return;
+  }
+  if (!canUseFullAdminConsole()) {
+    showAccessDeniedDashboard();
+    return;
+  }
   showView("admin", "adminView");
+  syncAdminConsoleAccess("");
   hideAdminPanels();
   setActiveAdminButton("");
   setActiveSidebarLabel("Admin Console");
@@ -1834,8 +1882,22 @@ function openAdminConsole(pushPath = true) {
 }
 
 function openAdminModule(action, pushPath = true) {
+  if (!canUseFullAdminConsole() && action !== "team-leaves") {
+    if (canUseTeamLeaveConsole()) {
+      showToast("You only have access to Team Leave Requests.");
+      openAdminModule("team-leaves", true);
+    } else {
+      showAccessDeniedDashboard();
+    }
+    return;
+  }
+  if (action === "team-leaves" && !canUseTeamLeaveConsole()) {
+    showAccessDeniedDashboard();
+    return;
+  }
   const path = adminActionPaths[action];
   showView("admin", "adminView");
+  syncAdminConsoleAccess(action);
   hideAdminPanels();
   setActiveAdminButton(action);
   setActiveSidebarLabel(adminActionLabels[action] || "Admin Console");

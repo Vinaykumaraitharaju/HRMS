@@ -1736,6 +1736,10 @@ label {
   gap: 8px;
 }
 
+.admin-view.team-leave-only .admin-actions {
+  display: none;
+}
+
 .profile-photo {
   width: 148px;
   height: 148px;

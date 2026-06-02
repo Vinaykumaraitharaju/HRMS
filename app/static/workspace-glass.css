@@ -1246,6 +1246,10 @@ label {
   margin-top: 14px;
 }
 
+.admin-view.team-leave-only .admin-actions {
+  display: none;
+}
+
 .admin-actions button,
 .segmented button,
 .rail-filter button,
