@@ -1448,6 +1448,48 @@ async function loadNotificationState() {
   }
 }
 
+async function refreshLiveState(scope = "all") {
+  const tasks = [];
+  const shouldRefresh = (...scopes) => scope === "all" || scopes.includes(scope);
+
+  if (shouldRefresh("notifications", "leave", "timesheet", "attendance", "people", "chat")) {
+    tasks.push(loadNotificationState().catch(() => {}));
+  }
+  if (shouldRefresh("leave", "timesheet")) {
+    tasks.push(loadLeaveState().catch(() => {}));
+    if (selectedTimesheetDate) tasks.push(loadTimesheetState(selectedTimesheetDate, { preserveCalendarMonth: true }).catch(() => {}));
+  }
+  if (shouldRefresh("leave")) {
+    if (isPeopleManagerRole()) tasks.push(loadTeamLeaveRequests().catch(() => {}));
+  }
+  if (shouldRefresh("attendance")) {
+    tasks.push(loadAttendanceStateFromBackend().catch(() => {}));
+    tasks.push(loadActivityFeed().catch(() => {}));
+    if (isPeopleManagerRole()) tasks.push(loadAdminDataFromApi().then(() => renderTeamStatusBoard()).catch(() => {}));
+  }
+  if (shouldRefresh("people")) {
+    if (isPeopleManagerRole()) tasks.push(loadAdminDataFromApi().catch(() => {}));
+    tasks.push(loadChatUsers().catch(() => {}));
+  }
+  if (shouldRefresh("chat")) {
+    tasks.push(loadPresenceState().then(() => loadChatState()).catch(() => {}));
+  }
+
+  await Promise.allSettled(tasks);
+  if (shouldRefresh("notifications", "chat")) renderSidebar();
+  if (shouldRefresh("attendance")) refreshAttendanceDashboard();
+  if (shouldRefresh("leave", "timesheet")) {
+    renderLeave();
+    renderLeaveWorkspace();
+    renderMyRequests();
+    renderTimesheetWorkspace();
+  }
+  if (shouldRefresh("leave")) renderTeamLeaveRequests();
+  if (shouldRefresh("attendance", "people")) renderTeamStatusBoard();
+  if (shouldRefresh("chat", "people")) renderChatWorkspace();
+  updateClock();
+}
+
 function updateNotificationBadge() {
   const notificationBadge = notificationToggle?.querySelector(".notification-badge");
 
@@ -1621,7 +1663,7 @@ async function markNotificationRead(id) {
       method: "PATCH",
     });
 
-    await loadNotificationState();
+    await refreshLiveState("notifications");
   } catch (error) {
     console.warn("Mark notification read failed", error);
   }
@@ -1633,7 +1675,7 @@ async function markAllNotificationsRead() {
       method: "PATCH",
     });
 
-    await loadNotificationState();
+    await refreshLiveState("notifications");
   } catch (error) {
     showToast(error.message || "Notifications could not be updated.");
   }
@@ -2385,7 +2427,7 @@ async function addAdminDepartment() {
       method: "POST",
       body: JSON.stringify({ name: department }),
     });
-    await loadAdminDataFromApi();
+    await refreshLiveState("people");
     renderDepartmentOptions();
     renderEmployeeManagerOptions();
     renderEmployeeAdmin();
@@ -2913,7 +2955,7 @@ async function openRolesAccessAdmin() {
   rolesAccessPanel.classList.remove("hidden");
 
   try {
-    await loadAdminDataFromApi();
+    await refreshLiveState("people");
 
     renderProjectLocationOptions();
     renderEmployeeManagerOptions();
@@ -2924,7 +2966,6 @@ async function openRolesAccessAdmin() {
     renderAssignmentRules();
     renderAccessAdmin();
     renderEmployeeAdmin();
-    renderTeamStatusBoard();
 
 
     scrollAdminPanelIntoView(rolesAccessPanel);
@@ -2997,7 +3038,7 @@ async function submitAccessAdmin(event) {
       });
     }
 
-    await loadAdminDataFromApi();
+    await refreshLiveState("people");
 
     renderEmployeeAdmin();
     renderEmployeeManagerOptions();
@@ -3005,7 +3046,6 @@ async function submitAccessAdmin(event) {
     syncAccessFormFromEmployee();
     renderAssignmentRules();
     renderAccessAdmin();
-    renderTeamStatusBoard();
 
     recordAudit("Access", `Updated access mapping for ${employee.name}`);
     showToast("Access mapping updated.");
@@ -3049,7 +3089,7 @@ async function submitPasswordResetAdmin(event) {
     });
 
     if (passwordResetInput) passwordResetInput.value = "";
-    await loadAdminDataFromApi();
+    await refreshLiveState("people");
     renderAccessOptions(employee.id);
     renderAccessAdmin();
     recordAudit("Access", `Reset password for ${employee.name}`);
@@ -3739,7 +3779,7 @@ async function decideTeamLeaveRequest(requestId, action) {
         : `/api/v1/leaves/${requestId}/reject`;
   try {
     await fetchJson(route, { method: "POST", body: JSON.stringify({ note: "" }) });
-    await Promise.allSettled([loadTeamLeaveRequests(), loadLeaveState(), loadNotificationState()]);
+    await refreshLiveState("leave");
     showToast(action === "reject" ? "Leave request rejected." : "Leave request approved.");
   } catch (err) {
     showToast(err.message || "Leave request could not be updated.");
@@ -4081,7 +4121,7 @@ async function submitEmployeeAdmin(event) {
       showToast(`Employee created. Login: ${email} / Temporary password: ${temporaryPassword}`);
     }
 
-    await loadAdminDataFromApi();
+    await refreshLiveState("people");
     if (employeeRecordId?.value) resetEmployeeForm();
     else {
       employeeAdminForm?.reset();
@@ -4098,7 +4138,6 @@ async function submitEmployeeAdmin(event) {
     renderAccessOptions();
     renderAssignmentRules();
     renderAccessAdmin();
-    renderTeamStatusBoard();
   } catch (err) {
     console.error(err);
     showToast(err.message || "Employee save failed.");
@@ -4142,13 +4181,12 @@ async function handleEmployeeAdminAction(target) {
   if (target.dataset.employeeAction === "toggle") {
     try {
       await fetchJson(`/api/v1/employees/${employee.id}`, { method: "DELETE" });
-      await loadAdminDataFromApi();
+      await refreshLiveState("people");
       renderEmployeeAdmin();
       renderEmployeeManagerOptions();
       renderAccessOptions();
       renderAssignmentRules();
       renderAccessAdmin();
-      renderTeamStatusBoard();
       recordAudit("Employee", `Deactivated employee ${employee.name}`);
       showToast("Employee deactivated and login disabled.");
     } catch (err) {
@@ -4697,6 +4735,7 @@ async function captureAttendanceToBackend(action, override = {}) {
         updateAttendancePriority();
         refreshAttendanceDashboard();
         updateClock();
+        refreshLiveState("attendance").catch(() => {});
       } catch (e) {
         showToast(e.message || "Attendance save failed.");
       }
@@ -5630,7 +5669,7 @@ function clearCurrentTimesheetEntry() {
   fetchJson(`/api/v1/timesheets/entries/${selectedTimesheetDate}`, {
     method: "DELETE",
   })
-    .then(() => loadTimesheetState(selectedTimesheetDate, { preserveCalendarMonth: true }))
+    .then(() => refreshLiveState("timesheet"))
     .then(() => {
       renderTimesheetWorkspace();
       showToast("Day entry cleared.");
@@ -5890,10 +5929,8 @@ function revokeLeaveRequest(requestId) {
   }
   showToast(safeStatus(request?.status).startsWith("Pending") ? "Cancelling leave request..." : "Processing revoke request...");
   fetchJson(`/api/v1/leaves/request/${requestId}`, { method: "DELETE" })
-    .then(() => loadLeaveState())
+    .then(() => refreshLiveState("leave"))
     .then(() => {
-      renderLeave();
-      renderLeaveWorkspace();
       const updated = leaveTrackerRequests.find((item) => String(item.id) === String(requestId));
       if (safeStatus(updated?.status) === "Cancelled") {
         showToast("Pending leave request cancelled.");
@@ -6123,11 +6160,9 @@ function submitLeaveApplication() {
         : leaveReasonCategoryInput.value,
     }),
   })
-    .then(() => loadLeaveState())
+    .then(() => refreshLiveState("leave"))
     .then(() => {
       resetLeaveApplicationForm();
-      renderLeave();
-      renderLeaveWorkspace();
       showToast("Leave request submitted.");
     })
     .catch((error) => {
@@ -6249,6 +6284,7 @@ async function persistTimesheetEntry() {
 
   hydrateTimesheetFromApi(updated);
   renderTimesheetWorkspace();
+  await refreshLiveState("timesheet");
   showToast("Timesheet day saved.");
 }
 
@@ -6273,7 +6309,7 @@ function clearCurrentTimesheetEntry() {
   fetchJson(`/api/v1/timesheets/entries/${selectedTimesheetDate}`, {
     method: "DELETE",
   })
-    .then(() => loadTimesheetState(selectedTimesheetDate, { preserveCalendarMonth: true }))
+    .then(() => refreshLiveState("timesheet"))
     .then(() => {
       timesheetTask.value = "";
       timesheetHours.value = "";
@@ -6304,6 +6340,7 @@ async function submitTimesheetWeekToBackend() {
 
   hydrateTimesheetFromApi(updated);
   renderTimesheetWorkspace();
+  await refreshLiveState("timesheet");
   showToast("Timesheet week submitted.");
 }
 
@@ -7426,8 +7463,7 @@ async function sendMessage() {
     pendingAttachments = [];
     renderAttachmentTray();
 
-    await loadPresenceState();
-    await loadChatState();
+    await refreshLiveState("chat");
     if (activeConversationId) await markConversationRead(activeConversationId);
     showToast("Message sent.");
   } catch (err) {
@@ -7602,8 +7638,7 @@ async function confirmAddPeople() {
       }),
     });
     closeModal();
-    await loadChatState();
-    renderChatWorkspace();
+    await refreshLiveState("chat");
     showToast("Group conversation created.");
   } catch (error) {
     showToast(error.message || "People could not be added.");
